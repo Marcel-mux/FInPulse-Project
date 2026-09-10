@@ -4,6 +4,8 @@ import { Header } from "@/components/layout/Header";
 import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
+import { QuickActionFloatingBar } from "@/components/dashboard/QuickActionFloatingBar";
+import { TransactionModal } from "@/components/modals/TransactionModal";
 import { AccountFormModal } from "@/components/modals/AccountFormModal";
 import { ReconciliationModal } from "@/components/modals/ReconciliationModal";
 import { CategoryFormModal } from "@/components/modals/CategoryFormModal";
@@ -31,12 +33,12 @@ export default function DashboardPage() {
   const transactions = transactionsData?.transactions || [];
 
   return (
-    <div className="min-h-screen bg-charcoal-950 text-foreground flex flex-col">
+    <div className="min-h-screen bg-charcoal-950 text-foreground flex flex-col relative">
       {/* Top Header */}
       <Header />
 
       {/* Main Dashboard Content */}
-      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-8 py-6 sm:py-8 flex flex-col gap-6 sm:gap-8">
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-8 py-6 sm:py-8 pb-28 sm:pb-32 flex flex-col gap-6 sm:gap-8">
         {/* Total Net Worth Overview */}
         <NetWorthCard
           totalNetWorth={totalNetWorth}
@@ -64,7 +66,11 @@ export default function DashboardPage() {
         />
       </main>
 
+      {/* Quick Action Floating Bar (Fixed at bottom) */}
+      <QuickActionFloatingBar />
+
       {/* Modals */}
+      <TransactionModal />
       <AccountFormModal />
       <ReconciliationModal />
       <CategoryFormModal />

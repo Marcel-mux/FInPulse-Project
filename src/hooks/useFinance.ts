@@ -242,3 +242,41 @@ export function useDeleteCategory() {
     },
   });
 }
+
+// ========================
+// MUTATIONS - TRANSACTIONS
+// ========================
+
+export function useCreateTransaction() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      type: "income" | "expense" | "transfer";
+      amount: number;
+      accountId: string;
+      toAccountId?: string;
+      categoryId?: string;
+      adminFee?: number;
+      date?: string;
+      description?: string;
+      tags?: string;
+      isRecurring?: boolean;
+    }) => {
+      const res = await fetch("/api/transactions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal mencatat transaksi");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+    },
+  });
+}
+
