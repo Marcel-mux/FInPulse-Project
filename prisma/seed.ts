@@ -5,15 +5,15 @@ const prisma = new PrismaClient();
 async function main() {
   console.log("🌱 Memulai seeding database FinPulse...");
 
-  // Bersihkan data lama jika ada
+  // Bersihkan data lama
   await prisma.budget.deleteMany();
   await prisma.transaction.deleteMany();
   await prisma.category.deleteMany();
   await prisma.account.deleteMany();
 
   // 1. Seed Akun Dummy
-  const accounts = [
-    {
+  const createdBca = await prisma.account.create({
+    data: {
       name: "BCA",
       type: "bank",
       balance: 15_000_000,
@@ -22,7 +22,10 @@ async function main() {
       icon: "Landmark",
       isActive: true,
     },
-    {
+  });
+
+  const createdCash = await prisma.account.create({
+    data: {
       name: "Cash",
       type: "cash",
       balance: 1_500_000,
@@ -31,7 +34,10 @@ async function main() {
       icon: "Banknote",
       isActive: true,
     },
-    {
+  });
+
+  const createdGopay = await prisma.account.create({
+    data: {
       name: "GoPay",
       type: "ewallet",
       balance: 750_000,
@@ -40,14 +46,9 @@ async function main() {
       icon: "Wallet",
       isActive: true,
     },
-  ];
+  });
 
-  for (const acc of accounts) {
-    await prisma.account.create({
-      data: acc,
-    });
-  }
-  console.log(`✅ Berhasil membuat ${accounts.length} akun.`);
+  console.log("✅ Berhasil membuat 3 akun: BCA, Cash, GoPay.");
 
   // 2. Seed Kategori Default
   const incomeCategories = [
@@ -67,16 +68,102 @@ async function main() {
     { name: "Pendidikan", type: "expense", icon: "GraduationCap", colorHex: "#6366F1" },
   ];
 
-  const allCategories = [...incomeCategories, ...expenseCategories];
+  const categoryMap: Record<string, string> = {};
 
-  for (const cat of allCategories) {
-    await prisma.category.create({
-      data: cat,
-    });
+  for (const cat of [...incomeCategories, ...expenseCategories]) {
+    const created = await prisma.category.create({ data: cat });
+    categoryMap[cat.name] = created.id;
   }
-  console.log(`✅ Berhasil membuat ${allCategories.length} kategori.`);
+  console.log("✅ Berhasil membuat 11 kategori.");
 
-  console.log("✨ Seeding selesai dengan sukses!");
+  // 3. Seed Sample Transaksi Realistis
+  const now = new Date();
+  const sampleTransactions = [
+    {
+      type: "income",
+      amount: 15_000_000,
+      date: new Date(now.getTime() - 1000 * 60 * 60 * 3), // 3 jam lalu
+      accountId: createdBca.id,
+      categoryId: categoryMap["Gaji"],
+      description: "Gaji Bulanan PT Solusi Digital",
+      tags: "#gaji #payroll",
+    },
+    {
+      type: "expense",
+      amount: 85_000,
+      date: new Date(now.getTime() - 1000 * 60 * 120), // 2 jam lalu
+      accountId: createdGopay.id,
+      categoryId: categoryMap["Makanan & Minuman"],
+      description: "Makan Siang & Es Kopi Susu",
+      tags: "#lunch #kopi",
+    },
+    {
+      type: "transfer",
+      amount: 500_000,
+      date: new Date(now.getTime() - 1000 * 60 * 60 * 24), // 1 hari lalu
+      accountId: createdBca.id,
+      toAccountId: createdGopay.id,
+      description: "Top Up Saldo E-Wallet",
+      tags: "#topup #transfer",
+    },
+    {
+      type: "expense",
+      amount: 75_000,
+      date: new Date(now.getTime() - 1000 * 60 * 60 * 36), // 1.5 hari lalu
+      accountId: createdCash.id,
+      categoryId: categoryMap["Transportasi"],
+      description: "Bensin Motor & Parkir",
+      tags: "#transport #bensin",
+    },
+    {
+      type: "expense",
+      amount: 249_000,
+      date: new Date(now.getTime() - 1000 * 60 * 60 * 72), // 3 hari lalu
+      accountId: createdBca.id,
+      categoryId: categoryMap["Hiburan"],
+      description: "Langganan Netflix & Spotify Family",
+      tags: "#subscription #entertainment",
+    },
+    {
+      type: "income",
+      amount: 3_500_000,
+      date: new Date(now.getTime() - 1000 * 60 * 60 * 120), // 5 hari lalu
+      accountId: createdBca.id,
+      categoryId: categoryMap["Freelance"],
+      description: "Pembayaran Desain UI/UX FinPulse",
+      tags: "#freelance #project",
+    },
+  ];
+
+  for (const tx of sampleTransactions) {
+    await prisma.transaction.create({ data: tx });
+  }
+  console.log(`✅ Berhasil membuat ${sampleTransactions.length} transaksi sample.`);
+
+  // 4. Seed Sample Budgets untuk bulan ini
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
+
+  await prisma.budget.create({
+    data: {
+      categoryId: categoryMap["Makanan & Minuman"],
+      amountLimit: 2_500_000,
+      periodMonth: currentMonth,
+      periodYear: currentYear,
+    },
+  });
+
+  await prisma.budget.create({
+    data: {
+      categoryId: categoryMap["Transportasi"],
+      amountLimit: 1_000_000,
+      periodMonth: currentMonth,
+      periodYear: currentYear,
+    },
+  });
+  console.log("✅ Berhasil membuat sample budgets.");
+
+  console.log("✨ Seeding selesai dengan sempurna!");
 }
 
 main()

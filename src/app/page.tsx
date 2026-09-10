@@ -1,18 +1,57 @@
-export default function HomePage() {
+"use client";
+
+import { Header } from "@/components/layout/Header";
+import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
+import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
+import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
+import { useAccounts, useRecentTransactions } from "@/hooks/useFinance";
+import { useAppStore } from "@/store/useAppStore";
+
+export default function DashboardPage() {
+  const { data: accountsData, isLoading: isAccountsLoading } = useAccounts();
+  const { data: transactionsData, isLoading: isTransactionsLoading } =
+    useRecentTransactions(10);
+
+  const { selectedAccountId, setSelectedAccountId, setTransactionModalOpen } =
+    useAppStore();
+
+  const accounts = accountsData?.accounts || [];
+  const totalNetWorth = accountsData?.totalNetWorth || 0;
+  const activeAccountsCount = accountsData?.activeAccountsCount || 0;
+  const transactions = transactionsData?.transactions || [];
+
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center p-6 text-center">
-      <div className="glass-card max-w-md w-full p-8 rounded-2xl border border-white/10 shadow-glow-emerald">
-        <h1 className="text-2xl font-bold tracking-tight text-emerald-400">
-          FinPulse
-        </h1>
-        <p className="mt-2 text-sm text-gray-400">
-          Personal Financial Intelligence & Wealth Tracker
-        </p>
-        <div className="mt-6 inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs text-emerald-400">
-          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-          Fondasi Teknis Siap Digunakan
-        </div>
-      </div>
-    </main>
+    <div className="min-h-screen bg-charcoal-950 text-foreground flex flex-col">
+      {/* Top Header */}
+      <Header />
+
+      {/* Main Dashboard Content */}
+      <main className="flex-1 w-full max-w-5xl mx-auto px-4 sm:px-8 py-6 sm:py-8 flex flex-col gap-6 sm:gap-8">
+        {/* Total Net Worth Overview */}
+        <NetWorthCard
+          totalNetWorth={totalNetWorth}
+          activeAccountsCount={activeAccountsCount}
+          isLoading={isAccountsLoading}
+        />
+
+        {/* Multi-Account Horizontal Carousel */}
+        <AccountCarousel
+          accounts={accounts}
+          isLoading={isAccountsLoading}
+          selectedAccountId={selectedAccountId}
+          onSelectAccount={(id) =>
+            setSelectedAccountId(selectedAccountId === id ? null : id)
+          }
+          onAddAccount={() => setTransactionModalOpen(true, "income")}
+        />
+
+        {/* Recent Activity Feed */}
+        <RecentActivityFeed
+          transactions={transactions}
+          isLoading={isTransactionsLoading}
+          onAddTransaction={() => setTransactionModalOpen(true, "expense")}
+        />
+      </main>
+    </div>
   );
 }
