@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AccountsResponse,
+  BudgetsResponse,
   Category,
   TransactionWithRelations,
 } from "@/types";
@@ -43,6 +44,26 @@ export function useCategories(type?: "income" | "expense") {
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error("Gagal mengambil data kategori");
+      }
+      return res.json();
+    },
+  });
+}
+
+export function useBudgets(month?: number, year?: number) {
+  const queryParams = new URLSearchParams();
+  if (month) queryParams.set("month", String(month));
+  if (year) queryParams.set("year", String(year));
+
+  const queryStr = queryParams.toString();
+  const url = queryStr ? `/api/budgets?${queryStr}` : "/api/budgets";
+
+  return useQuery<BudgetsResponse>({
+    queryKey: ["budgets", month || "current", year || "current"],
+    queryFn: async () => {
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("Gagal mengambil data anggaran");
       }
       return res.json();
     },
@@ -276,7 +297,58 @@ export function useCreateTransaction() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
     },
   });
 }
+
+// ========================
+// MUTATIONS - BUDGETS
+// ========================
+
+export function useUpsertBudget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      categoryId: string;
+      amountLimit: number;
+      periodMonth?: number;
+      periodYear?: number;
+    }) => {
+      const res = await fetch("/api/budgets", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal mengatur anggaran");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+    },
+  });
+}
+
+export function useDeleteBudget() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/budgets/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal menghapus anggaran");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+    },
+  });
+}
+
 

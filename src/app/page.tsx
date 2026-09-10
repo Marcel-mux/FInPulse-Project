@@ -3,6 +3,7 @@
 import { Header } from "@/components/layout/Header";
 import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
+import { BudgetSection } from "@/components/budget/BudgetSection";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { QuickActionFloatingBar } from "@/components/dashboard/QuickActionFloatingBar";
 import { TransactionModal } from "@/components/modals/TransactionModal";
@@ -11,6 +12,7 @@ import { ReconciliationModal } from "@/components/modals/ReconciliationModal";
 import { CategoryFormModal } from "@/components/modals/CategoryFormModal";
 import { ManageAccountsModal } from "@/components/modals/ManageAccountsModal";
 import { ManageCategoriesModal } from "@/components/modals/ManageCategoriesModal";
+import { BudgetFormModal } from "@/components/modals/BudgetFormModal";
 import { useAccounts, useRecentTransactions } from "@/hooks/useFinance";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -58,6 +60,9 @@ export default function DashboardPage() {
           onManageAccounts={() => setManageAccountsOpen(true)}
         />
 
+        {/* Budgeting & Burn Rate Visual Module */}
+        <BudgetSection />
+
         {/* Recent Activity Feed */}
         <RecentActivityFeed
           transactions={transactions}
@@ -76,6 +81,7 @@ export default function DashboardPage() {
       <CategoryFormModal />
       <ManageAccountsModal />
       <ManageCategoriesModal />
+      <BudgetFormModal />
     </div>
   );
 }

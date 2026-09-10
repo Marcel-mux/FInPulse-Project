@@ -69,3 +69,30 @@ export interface AccountsResponse {
   totalNetWorth: number;
   activeAccountsCount: number;
 }
+
+export interface BudgetWithCategory {
+  id: string;
+  categoryId: string;
+  amountLimit: number;
+  periodMonth: number;
+  periodYear: number;
+  createdAt: string | Date;
+  category: Category;
+  totalSpent: number;
+  remaining: number;
+  percentage: number;
+  dailyBurnRate: number;
+  estimatedDaysRemaining: number | null; // null jika belum ada pengeluaran
+  isWarning: boolean; // true jika estimasi habis sebelum akhir bulan
+  isExceeded: boolean; // true jika pemakaian >= 100%
+}
+
+export interface BudgetsResponse {
+  budgets: BudgetWithCategory[];
+  totalLimit: number;
+  totalSpent: number;
+  totalRemaining: number;
+  overallPercentage: number;
+  periodMonth: number;
+  periodYear: number;
+}

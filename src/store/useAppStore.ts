@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Account, Category } from "@/types";
+import { Account, BudgetWithCategory, Category } from "@/types";
 
 export type TransactionType = "income" | "expense" | "transfer";
 
@@ -23,6 +23,10 @@ interface AppState {
   isCategoryFormOpen: boolean;
   editingCategory: Category | null;
 
+  // Budget management modals
+  isBudgetModalOpen: boolean;
+  editingBudget: BudgetWithCategory | null;
+
   // Actions
   setTransactionModalOpen: (open: boolean, defaultType?: TransactionType) => void;
   setActiveTransactionType: (type: TransactionType) => void;
@@ -38,6 +42,9 @@ interface AppState {
   setManageCategoriesOpen: (open: boolean) => void;
   openCategoryForm: (category?: Category | null) => void;
   closeCategoryForm: () => void;
+
+  openBudgetForm: (budget?: BudgetWithCategory | null) => void;
+  closeBudgetForm: () => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -55,6 +62,9 @@ export const useAppStore = create<AppState>((set) => ({
   isManageCategoriesOpen: false,
   isCategoryFormOpen: false,
   editingCategory: null,
+
+  isBudgetModalOpen: false,
+  editingBudget: null,
 
   setTransactionModalOpen: (open, defaultType) =>
     set((state) => ({
@@ -80,4 +90,9 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isCategoryFormOpen: true, editingCategory: category }),
   closeCategoryForm: () =>
     set({ isCategoryFormOpen: false, editingCategory: null }),
+
+  openBudgetForm: (budget = null) =>
+    set({ isBudgetModalOpen: true, editingBudget: budget }),
+  closeBudgetForm: () =>
+    set({ isBudgetModalOpen: false, editingBudget: null }),
 }));
