@@ -11,6 +11,7 @@ interface AccountCarouselProps {
   selectedAccountId?: string | null;
   onSelectAccount?: (id: string) => void;
   onAddAccount?: () => void;
+  onManageAccounts?: () => void;
 }
 
 export function AccountCarousel({
@@ -19,6 +20,7 @@ export function AccountCarousel({
   selectedAccountId,
   onSelectAccount,
   onAddAccount,
+  onManageAccounts,
 }: AccountCarouselProps) {
   return (
     <section className="w-full flex flex-col gap-3">
@@ -30,13 +32,23 @@ export function AccountCarousel({
             Dompet & Rekening ({accounts.length})
           </h2>
         </div>
-        <button
-          onClick={onAddAccount}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
-        >
-          <Plus className="w-3.5 h-3.5" />
-          <span>Tambah Akun</span>
-        </button>
+        <div className="flex items-center gap-3">
+          {onManageAccounts && (
+            <button
+              onClick={onManageAccounts}
+              className="text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+            >
+              Kelola Semua
+            </button>
+          )}
+          <button
+            onClick={onAddAccount}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-colors"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>Tambah Akun</span>
+          </button>
+        </div>
       </div>
 
       {/* Horizontal Carousel Container */}

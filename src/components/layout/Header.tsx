@@ -1,11 +1,13 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Activity, Bell } from "lucide-react";
+import { Activity, Bell, FolderTree, WalletCards } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useAppStore } from "@/store/useAppStore";
 
 export function Header() {
   const [currentDate, setCurrentDate] = useState<string>("");
+  const { setManageAccountsOpen, setManageCategoriesOpen } = useAppStore();
 
   useEffect(() => {
     const now = new Date();
@@ -19,7 +21,7 @@ export function Header() {
   }, []);
 
   return (
-    <header className="w-full pt-4 pb-2 px-4 sm:px-8 flex items-center justify-between border-b border-white/[0.06] bg-charcoal-950/80 backdrop-blur-md sticky top-0 z-40">
+    <header className="w-full pt-4 pb-3 px-4 sm:px-8 flex items-center justify-between border-b border-white/[0.06] bg-charcoal-950/80 backdrop-blur-md sticky top-0 z-40">
       {/* Brand & Greeting */}
       <div className="flex items-center gap-3">
         <motion.div
@@ -44,24 +46,46 @@ export function Header() {
         </div>
       </div>
 
-      {/* Right Controls & Status */}
-      <div className="flex items-center gap-3">
-        <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-charcoal-900 border border-white/[0.08] text-xs text-gray-300">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-glow-emerald" />
-          <span>Real-time Sync</span>
-        </div>
+      {/* Navigation & Controls */}
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Manage Accounts Button */}
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setManageAccountsOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-charcoal-900/80 hover:bg-charcoal-900 border border-white/[0.08] hover:border-white/20 text-xs font-semibold text-gray-300 hover:text-white transition-all cursor-pointer"
+          title="Kelola Dompet & Rekonsiliasi"
+        >
+          <WalletCards className="w-4 h-4 text-emerald-400" />
+          <span className="hidden md:inline">Kelola Akun</span>
+        </motion.button>
 
+        {/* Manage Categories Button */}
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setManageCategoriesOpen(true)}
+          className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-charcoal-900/80 hover:bg-charcoal-900 border border-white/[0.08] hover:border-white/20 text-xs font-semibold text-gray-300 hover:text-white transition-all cursor-pointer"
+          title="Kelola Kategori Anggaran"
+        >
+          <FolderTree className="w-4 h-4 text-indigo-400" />
+          <span className="hidden md:inline">Kategori</span>
+        </motion.button>
+
+        <div className="h-5 w-[1px] bg-white/10 hidden sm:block mx-1" />
+
+        {/* Notifications */}
         <motion.button
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
-          className="relative p-2.5 rounded-xl bg-charcoal-900/80 border border-white/[0.08] text-gray-300 hover:text-white hover:border-white/20 transition-all"
+          className="relative p-2.5 rounded-xl bg-charcoal-900/80 border border-white/[0.08] text-gray-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
           aria-label="Notifikasi"
         >
           <Bell className="w-4 h-4" />
           <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-500 ring-2 ring-charcoal-950" />
         </motion.button>
 
-        {/* Avatar Profil Placeholder */}
+        {/* User Avatar */}
         <motion.div
           whileHover={{ scale: 1.05 }}
           className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 p-[1px] cursor-pointer"

@@ -4,6 +4,11 @@ import { Header } from "@/components/layout/Header";
 import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
+import { AccountFormModal } from "@/components/modals/AccountFormModal";
+import { ReconciliationModal } from "@/components/modals/ReconciliationModal";
+import { CategoryFormModal } from "@/components/modals/CategoryFormModal";
+import { ManageAccountsModal } from "@/components/modals/ManageAccountsModal";
+import { ManageCategoriesModal } from "@/components/modals/ManageCategoriesModal";
 import { useAccounts, useRecentTransactions } from "@/hooks/useFinance";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -12,8 +17,13 @@ export default function DashboardPage() {
   const { data: transactionsData, isLoading: isTransactionsLoading } =
     useRecentTransactions(10);
 
-  const { selectedAccountId, setSelectedAccountId, setTransactionModalOpen } =
-    useAppStore();
+  const {
+    selectedAccountId,
+    setSelectedAccountId,
+    setTransactionModalOpen,
+    openAccountForm,
+    setManageAccountsOpen,
+  } = useAppStore();
 
   const accounts = accountsData?.accounts || [];
   const totalNetWorth = accountsData?.totalNetWorth || 0;
@@ -42,7 +52,8 @@ export default function DashboardPage() {
           onSelectAccount={(id) =>
             setSelectedAccountId(selectedAccountId === id ? null : id)
           }
-          onAddAccount={() => setTransactionModalOpen(true, "income")}
+          onAddAccount={() => openAccountForm(null)}
+          onManageAccounts={() => setManageAccountsOpen(true)}
         />
 
         {/* Recent Activity Feed */}
@@ -52,6 +63,13 @@ export default function DashboardPage() {
           onAddTransaction={() => setTransactionModalOpen(true, "expense")}
         />
       </main>
+
+      {/* Modals */}
+      <AccountFormModal />
+      <ReconciliationModal />
+      <CategoryFormModal />
+      <ManageAccountsModal />
+      <ManageCategoriesModal />
     </div>
   );
 }
