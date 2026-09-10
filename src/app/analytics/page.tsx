@@ -3,13 +3,7 @@
 import { useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { QuickActionFloatingBar } from "@/components/dashboard/QuickActionFloatingBar";
-import { TransactionModal } from "@/components/modals/TransactionModal";
-import { AccountFormModal } from "@/components/modals/AccountFormModal";
-import { ReconciliationModal } from "@/components/modals/ReconciliationModal";
-import { CategoryFormModal } from "@/components/modals/CategoryFormModal";
-import { ManageAccountsModal } from "@/components/modals/ManageAccountsModal";
-import { ManageCategoriesModal } from "@/components/modals/ManageCategoriesModal";
-import { BudgetFormModal } from "@/components/modals/BudgetFormModal";
+import { GlobalModals } from "@/components/layout/GlobalModals";
 import { AnalyticsDateFilter } from "@/components/analytics/AnalyticsDateFilter";
 import { AnalyticsSummaryCards } from "@/components/analytics/AnalyticsSummaryCards";
 import { CashFlowBarChart } from "@/components/analytics/CashFlowBarChart";
@@ -106,15 +100,9 @@ export default function AnalyticsPage() {
         />
       </main>
 
-      {/* Floating Action Bar & Modals */}
+      {/* Floating Action Bar & All Global Modals */}
       <QuickActionFloatingBar />
-      <TransactionModal />
-      <AccountFormModal />
-      <ReconciliationModal />
-      <CategoryFormModal />
-      <ManageAccountsModal />
-      <ManageCategoriesModal />
-      <BudgetFormModal />
+      <GlobalModals />
     </div>
   );
 }

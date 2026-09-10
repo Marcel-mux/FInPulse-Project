@@ -173,14 +173,14 @@ export function ReconciliationModal() {
           <button
             type="button"
             onClick={closeReconciliation}
-            className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+            className="px-4 py-2.5 min-h-[44px] rounded-xl border border-white/10 text-xs font-semibold text-gray-400 hover:text-white transition-colors cursor-pointer"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={reconcileMutation.isPending}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-charcoal-950 text-xs font-bold shadow-glow-emerald hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
+            className="px-5 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-charcoal-950 text-xs font-bold shadow-glow-emerald hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
           >
             {reconcileMutation.isPending
               ? "Menyinkronkan..."

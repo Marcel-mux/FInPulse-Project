@@ -43,3 +43,36 @@ body {
     box-shadow: 0 0 25px -5px rgba(239, 68, 68, 0.3);
   }
 }
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 12mm 10mm;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #111827 !important;
+    overflow: visible !important;
+  }
+
+  /* Hide app UI elements when printing */
+  .no-print,
+  header,
+  nav,
+  aside,
+  main,
+  [role="dialog"],
+  .fixed {
+    display: none !important;
+  }
+
+  /* Display printable report cleanly */
+  #finpulse-printable-report {
+    display: block !important;
+    position: static !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+}

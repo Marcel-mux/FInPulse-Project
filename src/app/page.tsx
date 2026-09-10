@@ -6,13 +6,7 @@ import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
 import { BudgetSection } from "@/components/budget/BudgetSection";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { QuickActionFloatingBar } from "@/components/dashboard/QuickActionFloatingBar";
-import { TransactionModal } from "@/components/modals/TransactionModal";
-import { AccountFormModal } from "@/components/modals/AccountFormModal";
-import { ReconciliationModal } from "@/components/modals/ReconciliationModal";
-import { CategoryFormModal } from "@/components/modals/CategoryFormModal";
-import { ManageAccountsModal } from "@/components/modals/ManageAccountsModal";
-import { ManageCategoriesModal } from "@/components/modals/ManageCategoriesModal";
-import { BudgetFormModal } from "@/components/modals/BudgetFormModal";
+import { GlobalModals } from "@/components/layout/GlobalModals";
 import { useAccounts, useRecentTransactions } from "@/hooks/useFinance";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -74,14 +68,8 @@ export default function DashboardPage() {
       {/* Quick Action Floating Bar (Fixed at bottom) */}
       <QuickActionFloatingBar />
 
-      {/* Modals */}
-      <TransactionModal />
-      <AccountFormModal />
-      <ReconciliationModal />
-      <CategoryFormModal />
-      <ManageAccountsModal />
-      <ManageCategoriesModal />
-      <BudgetFormModal />
+      {/* All Global Modals (Accounts, Transactions, Reconciliation, Budgets, Export & Print) */}
+      <GlobalModals />
     </div>
   );
 }

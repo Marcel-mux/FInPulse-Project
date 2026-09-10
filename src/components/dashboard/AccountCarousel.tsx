@@ -51,8 +51,8 @@ export function AccountCarousel({
         </div>
       </div>
 
-      {/* Horizontal Carousel Container */}
-      <div className="w-full overflow-x-auto pb-4 pt-1 scrollbar-none flex gap-4 snap-x snap-mandatory">
+      {/* Horizontal Carousel Container with smooth touch swiping */}
+      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 w-[calc(100%+2rem)] sm:w-full overflow-x-auto pb-4 pt-1 scrollbar-none flex gap-3.5 sm:gap-4 snap-x snap-mandatory touch-pan-x">
         {isLoading ? (
           // Skeleton loader
           Array.from({ length: 3 }).map((_, idx) => (

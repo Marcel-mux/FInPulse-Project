@@ -2,7 +2,7 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { X } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface ModalProps {
   isOpen: boolean;
@@ -21,6 +21,16 @@ export function Modal({
   children,
   maxWidth = "max-w-lg",
 }: ModalProps) {
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Client-side detection of viewport
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 640);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   // Handle ESC key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -58,24 +68,40 @@ export function Modal({
             className="fixed inset-0 bg-black/75 backdrop-blur-sm"
           />
 
-          {/* Modal Container */}
-          {/* Mobile: slide-in dari bawah (bottom sheet) */}
-          {/* Desktop: scale & fade dari tengah */}
+          {/* Single Unified Responsive Modal Container */}
+          {/* Mobile: Bottom Sheet slide-in from bottom */}
+          {/* Desktop: Centered Scale & Fade dialog */}
           <motion.div
-            initial={{ y: "100%", opacity: 0.5 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: "100%", opacity: 0 }}
-            transition={{ type: "spring", damping: 30, stiffness: 300 }}
-            className={`sm:!hidden relative w-full max-h-[90vh] overflow-y-auto rounded-t-3xl p-6 glass-card border-t border-x border-white/10 shadow-2xl z-10`}
+            initial={
+              isMobile
+                ? { y: "100%", opacity: 0.8 }
+                : { scale: 0.95, opacity: 0, y: 15 }
+            }
+            animate={
+              isMobile
+                ? { y: 0, opacity: 1 }
+                : { scale: 1, opacity: 1, y: 0 }
+            }
+            exit={
+              isMobile
+                ? { y: "100%", opacity: 0 }
+                : { scale: 0.95, opacity: 0, y: 15 }
+            }
+            transition={{
+              type: "spring",
+              damping: isMobile ? 30 : 25,
+              stiffness: isMobile ? 300 : 280,
+            }}
+            className={`relative w-full ${maxWidth} max-h-[92vh] sm:max-h-[85vh] overflow-y-auto rounded-t-[28px] sm:rounded-3xl rounded-b-none sm:rounded-b-3xl p-5 sm:p-6 glass-card border-t border-x sm:border border-white/10 shadow-2xl sm:shadow-glass z-10 pb-[max(1.5rem,env(safe-area-inset-bottom))]`}
           >
-            {/* Mobile Drag/Grab Bar */}
-            <div className="w-12 h-1.5 bg-white/20 rounded-full mx-auto mb-4" />
+            {/* Mobile Grab / Drag Handle Bar */}
+            <div className="sm:hidden w-12 h-1.5 bg-white/25 rounded-full mx-auto mb-4 cursor-grab" />
 
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 mb-5">
+            {/* Modal Header */}
+            <div className="flex items-start justify-between gap-4 mb-4 sm:mb-5">
               <div>
                 {title && (
-                  <h3 className="text-lg font-bold text-white tracking-tight">
+                  <h3 className="text-lg sm:text-xl font-bold text-white tracking-tight">
                     {title}
                   </h3>
                 )}
@@ -83,49 +109,18 @@ export function Modal({
                   <p className="text-xs text-gray-400 mt-0.5">{description}</p>
                 )}
               </div>
+
+              {/* Close Button with >= 44px touch target on mobile */}
               <button
                 onClick={onClose}
-                className="p-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-gray-400 hover:text-white transition-colors"
+                className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl bg-white/[0.06] hover:bg-white/[0.12] text-gray-400 hover:text-white transition-colors cursor-pointer"
                 aria-label="Tutup"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5 sm:w-4 sm:h-4" />
               </button>
             </div>
 
-            {/* Content */}
-            {children}
-          </motion.div>
-
-          {/* Desktop Dialog */}
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0, y: 15 }}
-            animate={{ scale: 1, opacity: 1, y: 0 }}
-            exit={{ scale: 0.95, opacity: 0, y: 15 }}
-            transition={{ type: "spring", damping: 25, stiffness: 280 }}
-            className={`hidden sm:block relative w-full ${maxWidth} max-h-[85vh] overflow-y-auto rounded-3xl p-6 glass-card border border-white/10 shadow-glass z-10`}
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between gap-4 mb-5">
-              <div>
-                {title && (
-                  <h3 className="text-xl font-bold text-white tracking-tight">
-                    {title}
-                  </h3>
-                )}
-                {description && (
-                  <p className="text-xs text-gray-400 mt-0.5">{description}</p>
-                )}
-              </div>
-              <button
-                onClick={onClose}
-                className="p-1.5 rounded-xl bg-white/[0.05] hover:bg-white/[0.1] text-gray-400 hover:text-white transition-colors"
-                aria-label="Tutup"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Content */}
+            {/* Modal Content (Rendered exactly once) */}
             {children}
           </motion.div>
         </div>

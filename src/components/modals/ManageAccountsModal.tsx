@@ -125,13 +125,13 @@ export function ManageAccountsModal() {
                   </div>
 
                   {/* Actions */}
-                  <div className="flex items-center gap-1.5 sm:gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0">
                     {/* Reconcile button */}
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
                       onClick={() => openReconciliation(acc)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-300 text-xs font-semibold transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[38px] rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 text-indigo-300 text-xs font-semibold transition-colors cursor-pointer"
                       title="Rekonsiliasi Saldo"
                     >
                       <Scale className="w-3.5 h-3.5" />
@@ -141,20 +141,20 @@ export function ManageAccountsModal() {
                     {/* Edit button */}
                     <button
                       onClick={() => openAccountForm(acc)}
-                      className="p-2 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-white border border-white/[0.06] transition-colors"
+                      className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-white border border-white/[0.06] transition-colors cursor-pointer"
                       title="Edit Akun"
                     >
-                      <Edit2 className="w-3.5 h-3.5" />
+                      <Edit2 className="w-4 h-4" />
                     </button>
 
                     {/* Delete button */}
                     <button
                       onClick={() => handleDelete(acc)}
                       disabled={deleteAccountMutation.isPending}
-                      className="p-2 rounded-xl bg-crimson-500/10 hover:bg-crimson-500/20 text-crimson-400 border border-crimson-500/20 transition-colors"
+                      className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-crimson-500/10 hover:bg-crimson-500/20 text-crimson-400 border border-crimson-500/20 transition-colors cursor-pointer"
                       title="Hapus Akun"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </div>

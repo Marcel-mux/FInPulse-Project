@@ -231,10 +231,10 @@ export function CategoryFormModal() {
                 key={c}
                 type="button"
                 onClick={() => setColorHex(c)}
-                className={`w-7 h-7 rounded-full transition-transform ${
+                className={`w-8 h-8 rounded-full transition-transform cursor-pointer ${
                   colorHex === c
-                    ? "scale-125 ring-2 ring-white ring-offset-2 ring-offset-charcoal-950"
-                    : "hover:scale-110 opacity-80 hover:opacity-100"
+                    ? "scale-110 ring-2 ring-white ring-offset-2 ring-offset-charcoal-950"
+                    : "hover:scale-105 opacity-80 hover:opacity-100"
                 }`}
                 style={{ backgroundColor: c }}
               />
@@ -243,7 +243,7 @@ export function CategoryFormModal() {
               type="color"
               value={colorHex}
               onChange={(e) => setColorHex(e.target.value)}
-              className="w-7 h-7 rounded-full bg-transparent border-0 cursor-pointer"
+              className="w-8 h-8 rounded-full bg-transparent border-0 cursor-pointer"
               title="Pilih warna kustom"
             />
           </div>
@@ -254,14 +254,14 @@ export function CategoryFormModal() {
           <button
             type="button"
             onClick={closeCategoryForm}
-            className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+            className="px-4 py-2.5 min-h-[44px] rounded-xl border border-white/10 text-xs font-semibold text-gray-400 hover:text-white transition-colors cursor-pointer"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={isPending}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-charcoal-950 text-xs font-bold shadow-glow-emerald hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
+            className="px-5 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-charcoal-950 text-xs font-bold shadow-glow-emerald hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
           >
             {isPending
               ? "Menyimpan..."

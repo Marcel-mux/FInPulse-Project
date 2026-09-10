@@ -27,6 +27,9 @@ interface AppState {
   isBudgetModalOpen: boolean;
   editingBudget: BudgetWithCategory | null;
 
+  // Export report modal
+  isExportModalOpen: boolean;
+
   // Actions
   setTransactionModalOpen: (open: boolean, defaultType?: TransactionType) => void;
   setActiveTransactionType: (type: TransactionType) => void;
@@ -45,6 +48,8 @@ interface AppState {
 
   openBudgetForm: (budget?: BudgetWithCategory | null) => void;
   closeBudgetForm: () => void;
+
+  setExportModalOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -65,6 +70,8 @@ export const useAppStore = create<AppState>((set) => ({
 
   isBudgetModalOpen: false,
   editingBudget: null,
+
+  isExportModalOpen: false,
 
   setTransactionModalOpen: (open, defaultType) =>
     set((state) => ({
@@ -95,4 +102,6 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isBudgetModalOpen: true, editingBudget: budget }),
   closeBudgetForm: () =>
     set({ isBudgetModalOpen: false, editingBudget: null }),
+
+  setExportModalOpen: (open) => set({ isExportModalOpen: open }),
 }));

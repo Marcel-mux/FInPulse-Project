@@ -94,7 +94,7 @@ export function ManageCategoriesModal() {
           <div className="flex items-center p-1 rounded-xl bg-charcoal-900 border border-white/[0.08]">
             <button
               onClick={() => setActiveTab("expense")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "expense"
                   ? "bg-crimson-500/20 text-crimson-400 border border-crimson-500/30 shadow-sm"
                   : "text-gray-400 hover:text-white"
@@ -104,7 +104,7 @@ export function ManageCategoriesModal() {
             </button>
             <button
               onClick={() => setActiveTab("income")}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+              className={`px-3.5 py-2 min-h-[38px] rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "income"
                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 shadow-sm"
                   : "text-gray-400 hover:text-white"
@@ -116,7 +116,7 @@ export function ManageCategoriesModal() {
 
           <button
             onClick={() => openCategoryForm(null)}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold transition-all"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 min-h-[38px] rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 text-xs font-bold transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Kategori Baru</span>
@@ -165,18 +165,18 @@ export function ManageCategoriesModal() {
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => openCategoryForm(cat)}
-                      className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-white border border-white/[0.06] transition-colors"
+                      className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-white border border-white/[0.06] transition-colors cursor-pointer"
                       title="Edit Kategori"
                     >
-                      <Edit2 className="w-3 h-3" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => handleDelete(cat)}
                       disabled={deleteCategoryMutation.isPending}
-                      className="p-1.5 rounded-lg bg-crimson-500/10 hover:bg-crimson-500/20 text-crimson-400 border border-crimson-500/20 transition-colors"
+                      className="p-2 min-w-[36px] min-h-[36px] flex items-center justify-center rounded-xl bg-crimson-500/10 hover:bg-crimson-500/20 text-crimson-400 border border-crimson-500/20 transition-colors cursor-pointer"
                       title="Hapus Kategori"
                     >
-                      <Trash2 className="w-3 h-3" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>

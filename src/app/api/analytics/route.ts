@@ -9,6 +9,13 @@ import {
 
 export const dynamic = "force-dynamic";
 
+function toLocalDateKey(d: Date): string {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
@@ -117,7 +124,7 @@ export async function GET(request: NextRequest) {
     if (range === "7d" || range === "30d") {
       const iterDate = new Date(startDate);
       while (iterDate <= endDate) {
-        const key = iterDate.toISOString().slice(0, 10);
+        const key = toLocalDateKey(iterDate);
         const label = iterDate.toLocaleDateString("id-ID", {
           day: "numeric",
           month: "short",
@@ -129,7 +136,7 @@ export async function GET(request: NextRequest) {
 
     for (const tx of transactions) {
       const txDate = new Date(tx.date);
-      const key = txDate.toISOString().slice(0, 10);
+      const key = toLocalDateKey(txDate);
       const label = txDate.toLocaleDateString("id-ID", {
         day: "numeric",
         month: "short",

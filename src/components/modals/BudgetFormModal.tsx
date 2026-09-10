@@ -151,7 +151,7 @@ export function BudgetFormModal() {
                 key={q.val}
                 type="button"
                 onClick={() => handleQuickAdd(q.val)}
-                className="px-2.5 py-1 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.06] text-[11px] font-semibold text-gray-300 hover:text-white flex-shrink-0 transition-colors"
+                className="px-3.5 py-2 min-h-[38px] rounded-xl bg-white/[0.05] hover:bg-white/[0.1] border border-white/[0.08] text-xs font-semibold text-gray-200 hover:text-white flex-shrink-0 transition-all cursor-pointer select-none"
               >
                 {q.label}
               </button>
@@ -164,14 +164,14 @@ export function BudgetFormModal() {
           <button
             type="button"
             onClick={closeBudgetForm}
-            className="px-4 py-2.5 rounded-xl border border-white/10 text-xs font-semibold text-gray-400 hover:text-white transition-colors"
+            className="px-4 py-2.5 min-h-[44px] rounded-xl border border-white/10 text-xs font-semibold text-gray-400 hover:text-white transition-colors cursor-pointer"
           >
             Batal
           </button>
           <button
             type="submit"
             disabled={upsertBudgetMutation.isPending}
-            className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-charcoal-950 text-xs font-bold shadow-glow-emerald hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
+            className="px-5 py-2.5 min-h-[44px] rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-charcoal-950 text-xs font-bold shadow-glow-emerald hover:brightness-110 disabled:opacity-50 transition-all cursor-pointer"
           >
             {upsertBudgetMutation.isPending
               ? "Menyimpan..."
