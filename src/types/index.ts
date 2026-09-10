@@ -82,9 +82,9 @@ export interface BudgetWithCategory {
   remaining: number;
   percentage: number;
   dailyBurnRate: number;
-  estimatedDaysRemaining: number | null; // null jika belum ada pengeluaran
-  isWarning: boolean; // true jika estimasi habis sebelum akhir bulan
-  isExceeded: boolean; // true jika pemakaian >= 100%
+  estimatedDaysRemaining: number | null;
+  isWarning: boolean;
+  isExceeded: boolean;
 }
 
 export interface BudgetsResponse {
@@ -95,4 +95,49 @@ export interface BudgetsResponse {
   overallPercentage: number;
   periodMonth: number;
   periodYear: number;
+}
+
+export type TimeRange = "7d" | "30d" | "3m" | "ytd" | "custom";
+
+export interface CashFlowDataPoint {
+  date: string;
+  label: string;
+  income: number;
+  expense: number;
+  net: number;
+}
+
+export interface CategoryBreakdownPoint {
+  categoryId: string;
+  name: string;
+  color: string;
+  value: number; // nominal amount
+  percentage: number;
+  icon?: string | null;
+  count: number;
+}
+
+export interface ExpenseTrendPoint {
+  date: string;
+  label: string;
+  amount: number;
+}
+
+export interface AnalyticsSummary {
+  totalIncome: number;
+  totalExpense: number;
+  netCashFlow: number;
+  savingsRate: number;
+  transactionCount: number;
+}
+
+export interface AnalyticsResponse {
+  timeRange: TimeRange;
+  startDate: string;
+  endDate: string;
+  summary: AnalyticsSummary;
+  cashFlow: CashFlowDataPoint[];
+  categoryBreakdown: CategoryBreakdownPoint[];
+  expenseTrend: ExpenseTrendPoint[];
+  transactions: TransactionWithRelations[];
 }

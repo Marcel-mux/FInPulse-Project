@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AccountsResponse,
+  AnalyticsResponse,
   BudgetsResponse,
   Category,
   TransactionWithRelations,
@@ -64,6 +65,31 @@ export function useBudgets(month?: number, year?: number) {
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error("Gagal mengambil data anggaran");
+      }
+      return res.json();
+    },
+  });
+}
+
+export function useAnalytics(
+  range: string = "30d",
+  customStart?: string,
+  customEnd?: string
+) {
+  const queryParams = new URLSearchParams();
+  queryParams.set("range", range);
+  if (customStart) queryParams.set("startDate", customStart);
+  if (customEnd) queryParams.set("endDate", customEnd);
+
+  const queryStr = queryParams.toString();
+  const url = `/api/analytics?${queryStr}`;
+
+  return useQuery<AnalyticsResponse>({
+    queryKey: ["analytics", range, customStart || "", customEnd || ""],
+    queryFn: async () => {
+      const res = await fetch(url);
+      if (!res.ok) {
+        throw new Error("Gagal memuat data analitik keuangan");
       }
       return res.json();
     },
@@ -179,6 +205,7 @@ export function useReconcileAccount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 }
@@ -298,6 +325,7 @@ export function useCreateTransaction() {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 }
