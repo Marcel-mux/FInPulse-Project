@@ -6,37 +6,69 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
+function cleanEnv(val: string | undefined): string {
+  if (!val) return "";
+  let clean = val.trim();
+  if (
+    (clean.startsWith('"') && clean.endsWith('"')) ||
+    (clean.startsWith("'") && clean.endsWith("'"))
+  ) {
+    clean = clean.slice(1, -1).trim();
+  }
+  return clean;
+}
+
+function resolveTursoUrl(): string {
+  const candidates = [
+    cleanEnv(process.env.TURSO_DATABASE_URL),
+    cleanEnv(process.env.DATABASE_URL),
+    cleanEnv(process.env.DATABASE_URT),
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate || candidate.startsWith("file:")) continue;
+
+    if (
+      candidate.startsWith("libsql://") ||
+      candidate.startsWith("https://") ||
+      candidate.startsWith("http://") ||
+      candidate.startsWith("wss://") ||
+      candidate.startsWith("ws://")
+    ) {
+      return candidate;
+    }
+
+    if (candidate.includes("turso.io")) {
+      return `libsql://${candidate}`;
+    }
+  }
+
+  return "";
+}
+
 function createPrismaClient(): PrismaClient {
-  const tursoUrl =
-    process.env.TURSO_DATABASE_URL ||
-    (process.env.DATABASE_URL?.startsWith("libsql://") || process.env.DATABASE_URL?.startsWith("https://")
-      ? process.env.DATABASE_URL
-      : undefined) ||
-    process.env.DATABASE_URT;
+  const tursoUrl = resolveTursoUrl();
+  const authToken = cleanEnv(process.env.TURSO_AUTH_TOKEN);
 
-  const authToken = process.env.TURSO_AUTH_TOKEN;
-  const rawUrl = tursoUrl || process.env.DATABASE_URL || "";
+  // Hubungkan ke Turso via libSQL jika tursoUrl valid
+  if (tursoUrl) {
+    try {
+      const libsql = createClient({
+        url: tursoUrl,
+        authToken: authToken || undefined,
+      });
+      const adapter = new PrismaLibSQL(libsql);
 
-  // Hubungkan ke Turso via libSQL jika protokol libsql://, https://, atau ada TURSO_AUTH_TOKEN
-  const isLibSql =
-    rawUrl.startsWith("libsql://") ||
-    rawUrl.startsWith("https://") ||
-    Boolean(authToken && !rawUrl.startsWith("file:"));
-
-  if (isLibSql && rawUrl) {
-    const libsql = createClient({
-      url: rawUrl,
-      authToken: authToken,
-    });
-    const adapter = new PrismaLibSQL(libsql);
-
-    return new PrismaClient({
-      adapter,
-      log:
-        process.env.NODE_ENV === "development"
-          ? ["error", "warn"]
-          : ["error"],
-    });
+      return new PrismaClient({
+        adapter,
+        log:
+          process.env.NODE_ENV === "development"
+            ? ["error", "warn"]
+            : ["error"],
+      });
+    } catch (err) {
+      console.warn("⚠️ Warning: Gagal menginisialisasi PrismaLibSQL adapter:", err);
+    }
   }
 
   // Fallback SQLite lokal (file:./dev.db) saat pengujian lokal tanpa Turso
