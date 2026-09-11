@@ -10,6 +10,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "postinstall": "prisma generate",
     "db:migrate:turso": "tsx --env-file=.env scripts/apply-turso-migrations.ts",
     "db:seed:turso": "tsx --env-file=.env prisma/seed.ts"
   },
