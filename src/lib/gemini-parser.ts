@@ -199,9 +199,12 @@ Aturan Pemrosesan:
 6. Deskripsi (description):
    - Buat judul/keterangan transaksi yang ringkas, jelas, dan rapi dalam Bahasa Indonesia (contoh: "Beli Nasi Padang", "Bensin Motor Pertalite", "Gaji Bulanan", "Top Up ShopeePay").`;
 
+  const modelName =
+    process.env.GEMINI_MODEL || "gemini-3.6-flash";
+
   try {
     const response = await client.models.generateContent({
-      model: "gemini-2.5-flash",
+      model: modelName,
       contents: `Pesan pengguna WhatsApp: "${message}"`,
       config: {
         systemInstruction,
@@ -272,6 +275,13 @@ Aturan Pemrosesan:
       ? (parsed.type.toUpperCase() as "EXPENSE" | "INCOME" | "TRANSFER")
       : "EXPENSE";
 
+    const cleanNullable = (val?: string | null) => {
+      if (!val) return null;
+      const s = String(val).trim();
+      if (s === ":null" || s === "null" || s === "undefined" || s === "") return null;
+      return s;
+    };
+
     return {
       isTransaction: Boolean(parsed.isTransaction),
       type: parsed.isTransaction ? normalizedType : null,
@@ -279,8 +289,8 @@ Aturan Pemrosesan:
       accountName: parsed.accountName || accounts[0]?.name || "Kas Tunai",
       categoryName: parsed.categoryName || categories[0]?.name || "Lain-lain",
       description: parsed.description || message,
-      toAccountName: parsed.toAccountName || null,
-      replyMessage: parsed.replyMessage || null,
+      toAccountName: cleanNullable(parsed.toAccountName),
+      replyMessage: cleanNullable(parsed.replyMessage),
     };
   } catch (error) {
     console.error("[GEMINI PARSER ERROR]", error);
