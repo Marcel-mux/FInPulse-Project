@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { parseWhatsAppTransaction } from "@/lib/gemini-parser";
+import { sendWhatsAppMessage } from "@/lib/fonnte";
 
 export const dynamic = "force-dynamic";
 
 /**
  * Normalisasi nomor telepon:
- * Mengubah 08xx atau +628xx menjadi 628xx murni hanya angka.
+ * 1. Menghapus domain seperti @s.whatsapp.net atau @c.us
+ * 2. Menghapus semua spasi, tanda strip, kurung, dan karakter non-digit
+ * 3. Mengubah awalan '08' menjadi '628'
  */
 function normalizePhoneNumber(raw: string): string {
-  let cleaned = raw.replace(/@.*$/, "").replace(/\D/g, "");
+  let cleaned = raw.split("@")[0].trim();
+  cleaned = cleaned.replace(/\D/g, "");
   if (cleaned.startsWith("0")) {
     cleaned = "62" + cleaned.slice(1);
   }
@@ -44,6 +48,10 @@ export async function GET(request: NextRequest) {
  * Handler utama webhook pesan WhatsApp masuk
  */
 export async function POST(request: NextRequest) {
+  let senderRaw = "";
+  let messageRaw = "";
+  let normalizedSender = "";
+
   try {
     let payload: Record<string, unknown> = {};
 
@@ -68,33 +76,47 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Ekstraksi nomor pengirim dan isi pesan dari berbagai format gateway (Fonnte, Wablas, Baileys, Meta, dll)
-    const senderRaw = (payload.sender ||
+    // [DEBUG LOG] Log seluruh payload yang diterima dari Fonnte / Gateway
+    console.log("[DEBUG WEBHOOK INCOMING PAYLOAD]", JSON.stringify(payload, null, 2));
+
+    // Ekstraksi nomor pengirim dan isi pesan dari berbagai format gateway
+    senderRaw = (payload.sender ||
       payload.from ||
       payload.phone ||
       payload.waNumber ||
       payload.number ||
+      payload.member ||
       "") as string;
 
-    const messageRaw = (payload.message ||
+    messageRaw = (payload.message ||
       payload.text ||
       payload.body ||
       payload.caption ||
       "") as string;
 
+    normalizedSender = normalizePhoneNumber(senderRaw);
+
+    // [DEBUG LOG] Log nomor dan pesan yang telah diekstrak
+    console.log("[DEBUG WEBHOOK EXTRACTED]", {
+      senderRaw,
+      normalizedSender,
+      messageRaw,
+    });
+
     if (!senderRaw || !messageRaw) {
+      console.warn("[DEBUG WEBHOOK REJECTED] Field 'sender' atau 'message' kosong.");
       return NextResponse.json(
         {
           error: "Format payload tidak valid: membutuhkan field 'sender' dan 'message'",
+          receivedPayload: payload,
         },
         { status: 400 }
       );
     }
 
-    const normalizedSender = normalizePhoneNumber(senderRaw);
     const messageText = messageRaw.trim();
-
     if (!messageText) {
+      console.warn("[DEBUG WEBHOOK REJECTED] Isi pesan kosong setelah di-trim.");
       return NextResponse.json({
         reply: "Pesan tidak boleh kosong.",
         status: "empty_message",
@@ -106,9 +128,12 @@ export async function POST(request: NextRequest) {
       normalizedSender,
       "0" + (normalizedSender.startsWith("62") ? normalizedSender.slice(2) : normalizedSender),
       "+" + normalizedSender,
+      normalizedSender.startsWith("62") ? normalizedSender.slice(2) : normalizedSender,
     ];
 
-    const user = await prisma.user.findFirst({
+    console.log("[DEBUG WEBHOOK SEARCH VARIANTS]", phoneVariants);
+
+    let user = await prisma.user.findFirst({
       where: {
         whatsappNumber: { in: phoneVariants },
       },
@@ -123,12 +148,49 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    // Fallback: Jika tidak cocok langsung dengan 'in', cocokkan nomor semua user setelah dinormalisasi
+    if (!user) {
+      const allUsersWithWa = await prisma.user.findMany({
+        where: { whatsappNumber: { not: null } },
+        include: {
+          accounts: {
+            where: { isActive: true },
+            orderBy: { createdAt: "asc" },
+          },
+          categories: {
+            orderBy: { createdAt: "asc" },
+          },
+        },
+      });
+
+      user =
+        allUsersWithWa.find((u) => {
+          if (!u.whatsappNumber) return false;
+          return normalizePhoneNumber(u.whatsappNumber) === normalizedSender;
+        }) || null;
+    }
+
+    // [DEBUG LOG] Hasil pencarian user
+    if (user) {
+      console.log(
+        `[DEBUG WEBHOOK USER FOUND] Nama: ${user.name}, Email: ${user.email}, ID: ${user.id}, Akun: ${user.accounts.length}, Kategori: ${user.categories.length}`
+      );
+    } else {
+      console.log(`[DEBUG WEBHOOK USER NOT FOUND] Tidak ada user untuk nomor: ${normalizedSender}`);
+    }
+
     // 2. Jika Nomor Belum Terdaftar di FinPulse
     if (!user) {
       const unregisteredReply =
         "❌ *Nomor Anda belum terdaftar di FinPulse.*\n\n" +
         `Nomor terdeteksi: *+${normalizedSender}*\n\n` +
         "Silakan masuk ke Dashboard FinPulse dan tautkan nomor WhatsApp Anda pada menu *Bot WhatsApp AI* untuk mulai mencatat transaksi otomatis.";
+
+      console.log("[DEBUG WEBHOOK DISPATCHING UNREGISTERED REPLY TO FONNTE]");
+      await sendWhatsAppMessage({
+        target: normalizedSender,
+        message: unregisteredReply,
+      });
 
       return NextResponse.json({
         status: "unregistered",
@@ -143,6 +205,12 @@ export async function POST(request: NextRequest) {
         "⚠️ *Anda belum memiliki dompet/rekening aktif di FinPulse.*\n\n" +
         "Silakan buat minimal satu dompet (misal: Kas Tunai atau Bank) di dashboard FinPulse terlebih dahulu.";
 
+      console.log("[DEBUG WEBHOOK DISPATCHING NO ACCOUNT REPLY TO FONNTE]");
+      await sendWhatsAppMessage({
+        target: normalizedSender,
+        message: noAccountReply,
+      });
+
       return NextResponse.json({
         status: "no_accounts",
         reply: noAccountReply,
@@ -150,7 +218,8 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. Analisis Pesan Menggunakan Gemini 2.5 Flash
+    // 3. Analisis Pesan Menggunakan Gemini 3.6 Flash
+    console.log("[DEBUG WEBHOOK CALLING GEMINI PARSER] Input message:", messageText);
     const parsed = await parseWhatsAppTransaction({
       message: messageText,
       accounts: user.accounts.map((a) => ({
@@ -166,9 +235,12 @@ export async function POST(request: NextRequest) {
       })),
     });
 
+    // [DEBUG LOG] Log hasil respons Gemini
+    console.log("[DEBUG WEBHOOK GEMINI RESULT]", JSON.stringify(parsed, null, 2));
+
     // 4. Jika Pesan Bukan Transaksi (Obrolan / Pertanyaan / Sapaan)
     if (!parsed.isTransaction || !parsed.amount || parsed.amount <= 0) {
-      const reply =
+      const nonTxReply =
         parsed.replyMessage ||
         "👋 *Halo! Saya Bot AI FinPulse.*\n\n" +
         "Kirimkan pesan pencatatan keuangan Anda, contohnya:\n" +
@@ -177,10 +249,16 @@ export async function POST(request: NextRequest) {
         "• _Gaji freelance 1.5jt ke Jago_\n" +
         "• _Transfer 100rb dari BCA ke ShopeePay_";
 
+      console.log("[DEBUG WEBHOOK DISPATCHING NON-TRANSACTION REPLY TO FONNTE]");
+      await sendWhatsAppMessage({
+        target: normalizedSender,
+        message: nonTxReply,
+      });
+
       return NextResponse.json({
         status: "non_transaction",
-        reply,
-        message: reply,
+        reply: nonTxReply,
+        message: nonTxReply,
       });
     }
 
@@ -190,8 +268,8 @@ export async function POST(request: NextRequest) {
     // Helper pencocokan akun terbaik
     const matchAccount = (targetName?: string | null, excludeId?: string) => {
       const candidates = excludeId
-        ? user.accounts.filter((a) => a.id !== excludeId)
-        : user.accounts;
+        ? user!.accounts.filter((a) => a.id !== excludeId)
+        : user!.accounts;
 
       if (!targetName) return candidates[0];
 
@@ -221,7 +299,7 @@ export async function POST(request: NextRequest) {
     // Helper pencocokan kategori terbaik
     const matchCategory = (targetName: string | null | undefined, type: string) => {
       const targetType = type === "income" ? "income" : "expense";
-      const candidates = user.categories.filter((c) => c.type === targetType);
+      const candidates = user!.categories.filter((c) => c.type === targetType);
 
       if (!targetName) return candidates[0] || null;
 
@@ -252,7 +330,7 @@ export async function POST(request: NextRequest) {
         const destAccount = matchAccount(parsed.toAccountName, sourceAccount.id);
         if (!destAccount || destAccount.id === sourceAccount.id) {
           throw new Error(
-            "Untuk transfer, dibutuhkan minimal 2 akun/dompet yang berbeda. Tambahkan akun tujuan di dashboard."
+            "Untuk transfer, dibutuhkan minimal 2 akun/dompet yang berbeda. Tambahkan akun tujuan di dashboard FinPulse."
           );
         }
 
@@ -278,7 +356,7 @@ export async function POST(request: NextRequest) {
         // Buat record transaksi transfer
         const createdTx = await tx.transaction.create({
           data: {
-            userId: user.id,
+            userId: user!.id,
             type: "transfer",
             amount,
             date: new Date(),
@@ -323,7 +401,7 @@ export async function POST(request: NextRequest) {
 
         const createdTx = await tx.transaction.create({
           data: {
-            userId: user.id,
+            userId: user!.id,
             type: "expense",
             amount,
             date: new Date(),
@@ -361,7 +439,7 @@ export async function POST(request: NextRequest) {
 
       const createdTx = await tx.transaction.create({
         data: {
-          userId: user.id,
+          userId: user!.id,
           type: "income",
           amount,
           date: new Date(),
@@ -384,10 +462,19 @@ export async function POST(request: NextRequest) {
       return { reply, transaction: createdTx };
     });
 
+    // [DEBUG LOG & SEND MESSAGE VIA FONNTE] Kirim balasan transaksi sukses ke WhatsApp
+    console.log("[DEBUG WEBHOOK DISPATCHING SUCCESS REPLY TO FONNTE]");
+    const fonnteRes = await sendWhatsAppMessage({
+      target: normalizedSender,
+      message: executionResult.reply,
+    });
+    console.log("[DEBUG WEBHOOK FONNTE SEND RESULT]", JSON.stringify(fonnteRes));
+
     return NextResponse.json({
       status: "success",
       reply: executionResult.reply,
       message: executionResult.reply,
+      fonnte: fonnteRes,
       data: executionResult.transaction,
     });
   } catch (error) {
@@ -396,6 +483,15 @@ export async function POST(request: NextRequest) {
       error instanceof Error ? error.message : "Terjadi kesalahan saat memproses transaksi.";
 
     const friendlyReply = `⚠️ *Gagal Mencatat Transaksi*\n\n${errorMessage}`;
+
+    // Kirim pesan error kembali ke WhatsApp pengirim jika nomor valid
+    if (normalizedSender) {
+      console.log("[DEBUG WEBHOOK DISPATCHING ERROR REPLY TO FONNTE]");
+      await sendWhatsAppMessage({
+        target: normalizedSender,
+        message: friendlyReply,
+      });
+    }
 
     return NextResponse.json({
       status: "error",
