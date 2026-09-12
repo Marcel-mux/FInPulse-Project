@@ -49,12 +49,12 @@ export function EmptyTransactionState({
         </motion.div>
       </motion.div>
 
-      <h3 className="text-base font-bold text-white tracking-tight">
-        Belum Ada Transaksi Tercatat
+      <h3 className="text-base sm:text-lg font-bold text-white tracking-tight max-w-sm">
+        Belum ada transaksi tercatat. Mulai catat keuangan Anda!
       </h3>
-      <p className="text-xs sm:text-sm text-gray-400 max-w-sm mt-1 mb-6">
+      <p className="text-xs sm:text-sm text-gray-400 max-w-sm mt-1.5 mb-6">
         Catat pengeluaran, pemasukan, atau transfer pertamamu untuk mulai
-        memantau arus kas secara cerdas.
+        memantau arus kas dan aset secara cerdas.
       </p>
 
       {onAddTransaction && (

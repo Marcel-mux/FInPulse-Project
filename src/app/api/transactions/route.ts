@@ -130,25 +130,38 @@ export async function POST(request: NextRequest) {
     const txDate = date ? new Date(date) : new Date();
     const parsedAdminFee = adminFee ? Math.max(0, parseFloat(adminFee) || 0) : 0;
 
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request, body);
+
     // Eksekusi atomik menggunakan Prisma $transaction
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Cek akun asal
-      const sourceAccount = await tx.account.findUnique({
-        where: { id: accountId },
+      // 1. Cek akun asal milik user yang aktif
+      const sourceAccount = await tx.account.findFirst({
+        where: { id: accountId, userId },
       });
 
       if (!sourceAccount || !sourceAccount.isActive) {
-        throw new Error("Akun asal tidak ditemukan atau tidak aktif");
+        throw new Error("Akun asal tidak ditemukan, tidak aktif, atau tidak memiliki akses");
+      }
+
+      // Validasi kepemilikan kategori jika dipilih
+      if (categoryId) {
+        const category = await tx.category.findFirst({
+          where: { id: categoryId, userId },
+        });
+        if (!category) {
+          throw new Error("Kategori tidak valid atau tidak memiliki akses");
+        }
       }
 
       // 2. Alur Khusus Transfer
       if (type === "transfer") {
-        const destAccount = await tx.account.findUnique({
-          where: { id: toAccountId },
+        const destAccount = await tx.account.findFirst({
+          where: { id: toAccountId, userId },
         });
 
         if (!destAccount || !destAccount.isActive) {
-          throw new Error("Akun tujuan transfer tidak ditemukan atau tidak aktif");
+          throw new Error("Akun tujuan transfer tidak ditemukan, tidak aktif, atau tidak memiliki akses");
         }
 
         const totalDeduction = parsedAmount + parsedAdminFee;

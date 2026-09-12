@@ -83,7 +83,17 @@ export function RecentActivityFeed({
   }
 
   if (transactions.length === 0) {
-    return <EmptyTransactionState onAddTransaction={onAddTransaction} />;
+    return (
+      <section className="w-full flex flex-col gap-3">
+        <div className="flex items-center gap-2 px-1">
+          <Clock className="w-4 h-4 text-emerald-400" />
+          <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
+            Aktivitas Terkini
+          </h2>
+        </div>
+        <EmptyTransactionState onAddTransaction={onAddTransaction} />
+      </section>
+    );
   }
 
   return (
@@ -93,7 +103,7 @@ export function RecentActivityFeed({
         <div className="flex items-center gap-2">
           <Clock className="w-4 h-4 text-emerald-400" />
           <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
-            Aktivitas Terakhir
+            Aktivitas Terkini
           </h2>
           <span className="text-xs text-gray-400">
             ({filteredTransactions.length} dari {transactions.length})

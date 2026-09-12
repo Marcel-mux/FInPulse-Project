@@ -68,9 +68,13 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
   const categoryColor = budget.category.colorHex || "#10B981";
 
   // Threshold alerts
-  const isOverbudget = budget.percentage >= 100;
-  const isCritical = budget.percentage > 90;
-  const isWarning = budget.percentage >= 70 && budget.percentage <= 90;
+  const safePercentage =
+    typeof budget.percentage === "number" && !isNaN(budget.percentage)
+      ? budget.percentage
+      : 0;
+  const isOverbudget = safePercentage >= 100;
+  const isCritical = safePercentage > 90;
+  const isWarning = safePercentage >= 70 && safePercentage <= 90;
 
   return (
     <motion.div

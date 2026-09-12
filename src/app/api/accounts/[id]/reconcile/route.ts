@@ -22,14 +22,17 @@ export async function POST(
 
     const targetBalance = Number(actualBalance);
 
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request, body);
+
     // Jalankan atomic Prisma transaction
     const result = await prisma.$transaction(async (tx) => {
-      const account = await tx.account.findUnique({
-        where: { id },
+      const account = await tx.account.findFirst({
+        where: { id, userId },
       });
 
       if (!account) {
-        throw new Error("Akun tidak ditemukan");
+        throw new Error("Akun tidak ditemukan atau Anda tidak memiliki akses");
       }
 
       const currentBalance = account.balance;

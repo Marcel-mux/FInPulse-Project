@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { getAuthUserId } from "@/lib/userBootstrap";
 
 export const dynamic = "force-dynamic";
 
@@ -11,14 +12,15 @@ export async function PUT(
     const { id } = params;
     const body = await request.json();
     const { name, type, icon, colorHex } = body;
+    const userId = await getAuthUserId(request, body);
 
-    const existing = await prisma.category.findUnique({
-      where: { id },
+    const existing = await prisma.category.findFirst({
+      where: { id, userId },
     });
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Kategori tidak ditemukan" },
+        { error: "Kategori tidak ditemukan atau Anda tidak memiliki akses" },
         { status: 404 }
       );
     }
@@ -53,14 +55,15 @@ export async function PUT(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params;
+    const userId = await getAuthUserId(request);
 
-    const existing = await prisma.category.findUnique({
-      where: { id },
+    const existing = await prisma.category.findFirst({
+      where: { id, userId },
       include: {
         _count: {
           select: {
@@ -73,7 +76,7 @@ export async function DELETE(
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Kategori tidak ditemukan" },
+        { error: "Kategori tidak ditemukan atau Anda tidak memiliki akses" },
         { status: 404 }
       );
     }

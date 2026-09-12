@@ -102,7 +102,7 @@ export function AnalyticsSummaryCards({
               <div className="h-7 w-24 bg-white/10 rounded animate-pulse" />
             ) : (
               <AnimatedCounter
-                value={summary.netCashFlow}
+                value={Math.abs(summary.netCashFlow || 0)}
                 prefix={isNetPositive ? "Rp " : "-Rp "}
                 className="tabular-nums"
               />
@@ -130,11 +130,11 @@ export function AnalyticsSummaryCards({
             {isLoading ? (
               <div className="h-7 w-16 bg-white/10 rounded animate-pulse" />
             ) : (
-              `${summary.savingsRate}%`
+              `${typeof summary.savingsRate === "number" && !isNaN(summary.savingsRate) ? summary.savingsRate : 0}%`
             )}
           </div>
           <span className="text-[10px] text-gray-400 mt-1 block">
-            {summary.savingsRate >= 20 ? "Target Ideal Tercapai" : "Dapat Ditingkatkan"}
+            {(summary.savingsRate || 0) >= 20 ? "Target Ideal Tercapai" : "Dapat Ditingkatkan"}
           </span>
         </div>
       </motion.div>

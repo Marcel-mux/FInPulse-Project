@@ -25,16 +25,19 @@ export function AnimatedCounter({
   });
   const isInView = useInView(ref, { once: true, margin: "-10px" });
 
+  const safeValue = typeof value === "number" && !isNaN(value) ? value : 0;
+
   useEffect(() => {
     if (isInView) {
-      motionValue.set(value);
+      motionValue.set(safeValue);
     }
-  }, [motionValue, isInView, value]);
+  }, [motionValue, isInView, safeValue]);
 
   useEffect(() => {
     return springValue.on("change", (latest) => {
       if (ref.current) {
-        const rounded = Math.round(latest);
+        const safeLatest = typeof latest === "number" && !isNaN(latest) ? latest : 0;
+        const rounded = Math.round(safeLatest);
         const formatted = new Intl.NumberFormat("id-ID").format(rounded);
         ref.current.textContent = `${prefix}${formatted}${suffix}`;
       }
@@ -43,7 +46,9 @@ export function AnimatedCounter({
 
   return (
     <span ref={ref} className={className}>
-      {prefix}0{suffix}
+      {prefix}
+      {new Intl.NumberFormat("id-ID").format(Math.round(safeValue))}
+      {suffix}
     </span>
   );
 }

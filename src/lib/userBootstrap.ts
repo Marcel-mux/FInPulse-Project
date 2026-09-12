@@ -71,17 +71,14 @@ export async function bootstrapUserData(
 
 /**
  * Helper fleksibel untuk mendapatkan userId yang valid:
- * Mendukung body.userId, header x-user-id, atau fallback ke user yang ada di database.
+ * Prioritas utama adalah sesi NextAuth yang aktif (session.user.id),
+ * diikuti oleh header x-user-id / body.userId untuk pengujian terisolasi.
  */
 export async function getAuthUserId(
   request?: Request,
   body?: Record<string, unknown> | null
 ): Promise<string> {
-  if (body?.userId && typeof body.userId === "string") {
-    return body.userId;
-  }
-
-  // Ambil dari sesi NextAuth jika user sedang login
+  // 1. Ambil dari sesi NextAuth sebagai prioritas utama (Multi-Tenant Secure)
   try {
     const { getServerSession } = await import("next-auth");
     const { authOptions } = await import("@/lib/auth");
@@ -93,9 +90,15 @@ export async function getAuthUserId(
     // Sesi NextAuth belum tersedia / bukan dalam request context
   }
 
+  // 2. Header x-user-id (untuk pengujian otomatis / skrip internal)
   if (request) {
     const headerUserId = request.headers.get("x-user-id");
     if (headerUserId) return headerUserId;
+  }
+
+  // 3. Fallback body.userId (hanya jika tidak ada sesi NextAuth aktif)
+  if (body?.userId && typeof body.userId === "string") {
+    return body.userId;
   }
 
   const existingUser = await prisma.user.findFirst();
@@ -113,4 +116,18 @@ export async function getAuthUserId(
   });
 
   return defaultUser.id;
+}
+
+/**
+ * Memastikan bahwa pengguna telah terautentikasi sebelum mengeksekusi operasi mutasi data.
+ */
+export async function requireAuthUserId(
+  request?: Request,
+  body?: Record<string, unknown> | null
+): Promise<string> {
+  const userId = await getAuthUserId(request, body);
+  if (!userId) {
+    throw new Error("UNAUTHORIZED: Pengguna tidak terautentikasi");
+  }
+  return userId;
 }

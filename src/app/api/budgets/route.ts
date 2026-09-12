@@ -163,14 +163,17 @@ export async function POST(request: NextRequest) {
     const month = periodMonth ? parseInt(periodMonth, 10) : now.getMonth() + 1;
     const year = periodYear ? parseInt(periodYear, 10) : now.getFullYear();
 
-    // Cek apakah kategori valid
-    const category = await prisma.category.findUnique({
-      where: { id: categoryId },
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request, body);
+
+    // Cek apakah kategori valid dan milik user yang sedang login
+    const category = await prisma.category.findFirst({
+      where: { id: categoryId, userId },
     });
 
     if (!category) {
       return NextResponse.json(
-        { error: "Kategori tidak ditemukan" },
+        { error: "Kategori tidak ditemukan atau Anda tidak memiliki akses" },
         { status: 404 }
       );
     }
@@ -178,6 +181,7 @@ export async function POST(request: NextRequest) {
     // Upsert budget: update jika sudah ada di bulan/tahun tsb, atau buat baru
     const existingBudget = await prisma.budget.findFirst({
       where: {
+        userId,
         categoryId,
         periodMonth: month,
         periodYear: year,

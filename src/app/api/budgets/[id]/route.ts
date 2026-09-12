@@ -4,19 +4,21 @@ import { prisma } from "@/lib/prisma";
 export const dynamic = "force-dynamic";
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
     const { id } = params;
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request);
 
-    const existing = await prisma.budget.findUnique({
-      where: { id },
+    const existing = await prisma.budget.findFirst({
+      where: { id, userId },
     });
 
     if (!existing) {
       return NextResponse.json(
-        { error: "Anggaran tidak ditemukan" },
+        { error: "Anggaran tidak ditemukan atau Anda tidak memiliki akses" },
         { status: 404 }
       );
     }

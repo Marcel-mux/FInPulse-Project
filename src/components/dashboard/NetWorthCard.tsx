@@ -56,7 +56,7 @@ export function NetWorthCard({
           ) : isVisible ? (
             <div className="text-3xl sm:text-5xl font-black tracking-tight text-white flex items-baseline gap-1">
               <AnimatedCounter
-                value={totalNetWorth}
+                value={typeof totalNetWorth === "number" && !isNaN(totalNetWorth) ? totalNetWorth : 0}
                 prefix="Rp "
                 className="tabular-nums"
               />
@@ -70,7 +70,7 @@ export function NetWorthCard({
           <div className="flex flex-wrap items-center gap-2 mt-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/[0.05] border border-white/[0.08] text-xs font-medium text-gray-300">
               <Wallet className="w-3.5 h-3.5 text-emerald-400" />
-              {activeAccountsCount} Dompet / Rekening Aktif
+              {activeAccountsCount || 0} Dompet / Rekening Aktif
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-semibold">
               <TrendingUp className="w-3 h-3" />

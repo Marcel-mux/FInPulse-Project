@@ -14,9 +14,12 @@ export function BudgetProgressBar({
   height = "h-3",
   showLabels = false,
 }: BudgetProgressBarProps) {
+  const safePercentage =
+    typeof percentage === "number" && !isNaN(percentage) ? percentage : 0;
+
   // Threshold determination
-  const isWarning = percentage >= 70 && percentage <= 90;
-  const isCritical = percentage > 90;
+  const isWarning = safePercentage >= 70 && safePercentage <= 90;
+  const isCritical = safePercentage > 90;
 
   // Visual classes based on threshold
   let fillGradient = "from-emerald-500 to-emerald-400";
@@ -36,10 +39,10 @@ export function BudgetProgressBar({
     glowClass = "shadow-glow-crimson";
     textColor = "text-crimson-400";
     StatusIcon = AlertOctagon;
-    statusText = percentage >= 100 ? "Melebihi Bujet!" : "Kritis";
+    statusText = safePercentage >= 100 ? "Melebihi Bujet!" : "Kritis";
   }
 
-  const clampedPercentage = Math.min(Math.max(percentage, 0), 100);
+  const clampedPercentage = Math.min(Math.max(safePercentage, 0), 100);
 
   return (
     <div className="w-full flex flex-col gap-1.5">
@@ -50,7 +53,7 @@ export function BudgetProgressBar({
             <span className={textColor}>{statusText}</span>
           </div>
           <span className={`font-bold tabular-nums ${textColor}`}>
-            {percentage}%
+            {safePercentage}%
           </span>
         </div>
       )}
