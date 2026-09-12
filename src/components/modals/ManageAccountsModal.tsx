@@ -5,6 +5,7 @@ import {
   Banknote,
   CreditCard,
   Edit2,
+  Eye,
   Landmark,
   Plus,
   Scale,
@@ -31,6 +32,7 @@ export function ManageAccountsModal() {
     isManageAccountsOpen,
     setManageAccountsOpen,
     openAccountForm,
+    openAccountDetail,
     openReconciliation,
   } = useAppStore();
 
@@ -137,6 +139,18 @@ export function ManageAccountsModal() {
                       <Scale className="w-3.5 h-3.5" />
                       <span className="hidden sm:inline">Rekonsiliasi</span>
                     </motion.button>
+
+                    {/* Detail button */}
+                    <button
+                      onClick={() => {
+                        setManageAccountsOpen(false);
+                        openAccountDetail(acc);
+                      }}
+                      className="p-2 min-w-[38px] min-h-[38px] flex items-center justify-center rounded-xl bg-white/[0.04] hover:bg-white/[0.08] text-gray-300 hover:text-emerald-400 border border-white/[0.06] transition-colors cursor-pointer"
+                      title="Detail Saldo & Riwayat"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
 
                     {/* Edit button */}
                     <button

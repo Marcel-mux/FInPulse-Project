@@ -11,7 +11,7 @@ export async function PUT(
   try {
     const { id } = params;
     const body = await request.json();
-    const { name, type, colorHex, icon, isActive } = body;
+    const { name, type, colorHex, icon, isActive, balance } = body;
     const userId = await getAuthUserId(request, body);
 
     const existing = await prisma.account.findFirst({
@@ -27,6 +27,12 @@ export async function PUT(
 
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = String(name).trim();
+    if (balance !== undefined) {
+      const parsedBalance = typeof balance === "number" ? balance : parseFloat(balance);
+      if (!isNaN(parsedBalance)) {
+        updateData.balance = parsedBalance;
+      }
+    }
     if (type !== undefined) updateData.type = type;
     if (colorHex !== undefined) updateData.colorHex = colorHex;
     if (icon !== undefined) updateData.icon = icon;

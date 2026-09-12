@@ -10,6 +10,7 @@ interface AccountCarouselProps {
   isLoading?: boolean;
   selectedAccountId?: string | null;
   onSelectAccount?: (id: string) => void;
+  onAccountClick?: (account: Account) => void;
   onAddAccount?: () => void;
   onManageAccounts?: () => void;
 }
@@ -19,6 +20,7 @@ export function AccountCarousel({
   isLoading = false,
   selectedAccountId,
   onSelectAccount,
+  onAccountClick,
   onAddAccount,
   onManageAccounts,
 }: AccountCarouselProps) {
@@ -72,6 +74,7 @@ export function AccountCarousel({
                 account={account}
                 isSelected={selectedAccountId === account.id}
                 onSelect={onSelectAccount}
+                onClick={onAccountClick}
               />
             </div>
           ))

@@ -21,6 +21,7 @@ export default function DashboardPage() {
     setSelectedAccountId,
     setTransactionModalOpen,
     openAccountForm,
+    openAccountDetail,
     setManageAccountsOpen,
   } = useAppStore();
 
@@ -54,6 +55,7 @@ export default function DashboardPage() {
               onSelectAccount={(id) =>
                 setSelectedAccountId(selectedAccountId === id ? null : id)
               }
+              onAccountClick={(acc) => openAccountDetail(acc)}
               onAddAccount={() => openAccountForm(null)}
               onManageAccounts={() => setManageAccountsOpen(true)}
             />

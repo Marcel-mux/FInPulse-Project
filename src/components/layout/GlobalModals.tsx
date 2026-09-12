@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { TransactionModal } from "@/components/modals/TransactionModal";
 import { AccountFormModal } from "@/components/modals/AccountFormModal";
+import { AccountDetailModal } from "@/components/modals/AccountDetailModal";
 import { ReconciliationModal } from "@/components/modals/ReconciliationModal";
 import { CategoryFormModal } from "@/components/modals/CategoryFormModal";
 import { ManageAccountsModal } from "@/components/modals/ManageAccountsModal";
@@ -48,6 +49,7 @@ export function GlobalModals() {
     <>
       <TransactionModal />
       <AccountFormModal />
+      <AccountDetailModal />
       <ReconciliationModal />
       <CategoryFormModal />
       <ManageAccountsModal />

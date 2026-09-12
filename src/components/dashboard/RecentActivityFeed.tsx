@@ -8,12 +8,15 @@ import {
   ArrowUpRight,
   Briefcase,
   Car,
+  Cigarette,
   CircleDollarSign,
   Clock,
+  Coffee,
   Film,
   Gift,
   GraduationCap,
   HeartPulse,
+  Home,
   Laptop,
   Receipt,
   Search,
@@ -21,6 +24,7 @@ import {
   Tag,
   TrendingUp,
   Utensils,
+  Wifi,
   X,
 } from "lucide-react";
 import { TransactionWithRelations } from "@/types";
@@ -45,6 +49,10 @@ const CATEGORY_ICON_MAP: Record<string, typeof CircleDollarSign> = {
   Receipt,
   HeartPulse,
   GraduationCap,
+  Coffee,
+  Cigarette,
+  Wifi,
+  Home,
 };
 
 export function RecentActivityFeed({

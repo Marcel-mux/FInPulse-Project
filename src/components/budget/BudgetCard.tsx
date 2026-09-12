@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   Briefcase,
   Car,
+  Cigarette,
   CircleDollarSign,
   Coffee,
   Coins,
@@ -25,6 +26,7 @@ import {
   Trash2,
   TrendingUp,
   Utensils,
+  Wifi,
   Wrench,
   Zap,
 } from "lucide-react";
@@ -54,6 +56,8 @@ const CATEGORY_ICON_MAP: Record<string, typeof CircleDollarSign> = {
   HeartPulse,
   GraduationCap,
   Coffee,
+  Cigarette,
+  Wifi,
   Home,
   Plane,
   Smartphone,

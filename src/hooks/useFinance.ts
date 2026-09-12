@@ -37,6 +37,26 @@ export function useRecentTransactions(limit: number = 10) {
   });
 }
 
+export function useAccountTransactions(
+  accountId?: string | null,
+  limit: number = 50
+) {
+  return useQuery<{ transactions: TransactionWithRelations[] }>({
+    queryKey: ["transactions", "account", accountId || "none", limit],
+    queryFn: async () => {
+      if (!accountId) return { transactions: [] };
+      const res = await fetch(
+        `/api/transactions?accountId=${accountId}&limit=${limit}`
+      );
+      if (!res.ok) {
+        throw new Error("Gagal mengambil riwayat transaksi akun");
+      }
+      return res.json();
+    },
+    enabled: Boolean(accountId),
+  });
+}
+
 export function useCategories(type?: "income" | "expense") {
   return useQuery<{ categories: Category[] }>({
     queryKey: ["categories", type || "all"],
@@ -136,6 +156,7 @@ export function useUpdateAccount() {
     }: {
       id: string;
       name?: string;
+      balance?: number;
       type?: string;
       colorHex?: string;
       icon?: string;
@@ -155,6 +176,7 @@ export function useUpdateAccount() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
     },
   });
 }

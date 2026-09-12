@@ -16,6 +16,7 @@ interface AccountCardProps {
   account: Account;
   isSelected?: boolean;
   onSelect?: (accountId: string) => void;
+  onClick?: (account: Account) => void;
 }
 
 const TYPE_CONFIG: Record<
@@ -75,6 +76,7 @@ export function AccountCard({
   account,
   isSelected = false,
   onSelect,
+  onClick,
 }: AccountCardProps) {
   const cardRef = useRef<HTMLDivElement>(null);
 
@@ -115,7 +117,10 @@ export function AccountCard({
         ref={cardRef}
         onMouseMove={handleMouseMove}
         onMouseLeave={handleMouseLeave}
-        onClick={() => onSelect?.(account.id)}
+        onClick={() => {
+          onClick?.(account);
+          onSelect?.(account.id);
+        }}
         style={{
           rotateX,
           rotateY,

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
   Briefcase,
   Car,
+  Cigarette,
   Coffee,
   Coins,
   DollarSign,
@@ -21,6 +22,7 @@ import {
   Smartphone,
   TrendingUp,
   Utensils,
+  Wifi,
   Wrench,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
@@ -36,13 +38,15 @@ const AVAILABLE_ICONS = [
   { name: "Coins", comp: Coins },
   { name: "DollarSign", comp: DollarSign },
   { name: "Utensils", comp: Utensils },
+  { name: "Coffee", comp: Coffee },
+  { name: "Cigarette", comp: Cigarette },
+  { name: "Wifi", comp: Wifi },
   { name: "Car", comp: Car },
   { name: "Film", comp: Film },
   { name: "ShoppingBag", comp: ShoppingBag },
   { name: "Receipt", comp: Receipt },
   { name: "HeartPulse", comp: HeartPulse },
   { name: "GraduationCap", comp: GraduationCap },
-  { name: "Coffee", comp: Coffee },
   { name: "Home", comp: Home },
   { name: "Plane", comp: Plane },
   { name: "Smartphone", comp: Smartphone },

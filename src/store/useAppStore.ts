@@ -14,6 +14,10 @@ interface AppState {
   isAccountFormOpen: boolean;
   editingAccount: Account | null;
 
+  // Account detail modal
+  isAccountDetailOpen: boolean;
+  viewingAccount: Account | null;
+
   // Balance reconciliation modal
   isReconciliationOpen: boolean;
   reconcilingAccount: Account | null;
@@ -42,6 +46,9 @@ interface AppState {
   openAccountForm: (account?: Account | null) => void;
   closeAccountForm: () => void;
 
+  openAccountDetail: (account: Account) => void;
+  closeAccountDetail: () => void;
+
   openReconciliation: (account: Account) => void;
   closeReconciliation: () => void;
 
@@ -64,6 +71,9 @@ export const useAppStore = create<AppState>((set) => ({
   isManageAccountsOpen: false,
   isAccountFormOpen: false,
   editingAccount: null,
+
+  isAccountDetailOpen: false,
+  viewingAccount: null,
 
   isReconciliationOpen: false,
   reconcilingAccount: null,
@@ -91,6 +101,11 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isAccountFormOpen: true, editingAccount: account }),
   closeAccountForm: () =>
     set({ isAccountFormOpen: false, editingAccount: null }),
+
+  openAccountDetail: (account) =>
+    set({ isAccountDetailOpen: true, viewingAccount: account }),
+  closeAccountDetail: () =>
+    set({ isAccountDetailOpen: false, viewingAccount: null }),
 
   openReconciliation: (account) =>
     set({ isReconciliationOpen: true, reconcilingAccount: account }),

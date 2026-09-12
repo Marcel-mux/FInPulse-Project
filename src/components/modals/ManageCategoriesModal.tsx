@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Briefcase,
   Car,
+  Cigarette,
   CircleDollarSign,
   Coffee,
   Coins,
@@ -25,6 +26,7 @@ import {
   Trash2,
   TrendingUp,
   Utensils,
+  Wifi,
   Wrench,
 } from "lucide-react";
 import { Modal } from "@/components/ui/Modal";
@@ -48,6 +50,8 @@ const CATEGORY_ICON_MAP: Record<string, typeof CircleDollarSign> = {
   HeartPulse,
   GraduationCap,
   Coffee,
+  Cigarette,
+  Wifi,
   Home,
   Plane,
   Smartphone,
