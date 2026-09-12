@@ -1,0 +1,47 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#064e3b"/>
+      <stop offset="50%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e1b4b"/>
+    </linearGradient>
+    <linearGradient id="emblemGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#059669"/>
+      <stop offset="50%" stop-color="#10b981"/>
+      <stop offset="100%" stop-color="#6366f1"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#000000" flood-opacity="0.5"/>
+    </filter>
+  </defs>
+
+  <!-- Full bleed background for maskable support -->
+  <rect width="512" height="512" fill="url(#bgGrad)" />
+
+  <!-- Inner emblem with brand gradient -->
+  <rect x="76" y="76" width="360" height="360" rx="84" fill="url(#emblemGrad)" filter="url(#shadow)" />
+
+  <!-- Subtle glossy highlight on top of emblem -->
+  <path d="M 76 160 C 76 113.6 113.6 76 160 76 L 352 76 C 398.4 76 436 113.6 436 160 L 436 210 C 330 230 180 190 76 210 Z" fill="white" opacity="0.12" />
+
+  <!-- Activity pulse wave inside emblem -->
+  <g transform="translate(256, 256) scale(11) translate(-12, -12)">
+    <polyline 
+      points="22 12 18 12 15 21 9 3 6 12 2 12" 
+      fill="none" 
+      stroke="#ffffff" 
+      stroke-width="2.5" 
+      stroke-linecap="round" 
+      stroke-linejoin="round"
+      filter="url(#glow)"
+    />
+  </g>
+
+  <!-- Pulse peak highlight points -->
+  <circle cx="223" cy="157" r="7" fill="#ffffff" filter="url(#glow)" />
+  <circle cx="289" cy="355" r="7" fill="#ffffff" filter="url(#glow)" />
+</svg>
