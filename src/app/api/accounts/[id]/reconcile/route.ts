@@ -56,6 +56,7 @@ export async function POST(
       // Catat mutasi penyesuaian ke buku besar transaksi
       const adjustmentTransaction = await tx.transaction.create({
         data: {
+          userId: account.userId,
           type: isSurplus ? "income" : "expense",
           amount,
           date: new Date(),

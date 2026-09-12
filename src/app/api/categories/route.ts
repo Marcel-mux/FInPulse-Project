@@ -49,8 +49,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request, body);
+
     const newCategory = await prisma.category.create({
       data: {
+        userId,
         name: name.trim(),
         type,
         icon: icon || null,

@@ -56,9 +56,12 @@ export async function POST(request: NextRequest) {
     }
 
     const initialBalance = typeof balance === "number" ? balance : parseFloat(balance) || 0;
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request, body);
 
     const newAccount = await prisma.account.create({
       data: {
+        userId,
         name: name.trim(),
         type,
         balance: initialBalance,

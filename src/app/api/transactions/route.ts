@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
         // Catat transaksi transfer utama
         const transferTx = await tx.transaction.create({
           data: {
+            userId: sourceAccount.userId,
             type: "transfer",
             amount: parsedAmount,
             date: txDate,
@@ -201,6 +202,7 @@ export async function POST(request: NextRequest) {
         if (parsedAdminFee > 0) {
           await tx.transaction.create({
             data: {
+              userId: sourceAccount.userId,
               type: "expense",
               amount: parsedAdminFee,
               date: txDate,
@@ -235,6 +237,7 @@ export async function POST(request: NextRequest) {
 
         const expenseTx = await tx.transaction.create({
           data: {
+            userId: sourceAccount.userId,
             type: "expense",
             amount: parsedAmount,
             date: txDate,
@@ -266,6 +269,7 @@ export async function POST(request: NextRequest) {
 
         const incomeTx = await tx.transaction.create({
           data: {
+            userId: sourceAccount.userId,
             type: "income",
             amount: parsedAmount,
             date: txDate,

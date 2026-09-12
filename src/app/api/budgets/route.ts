@@ -193,6 +193,7 @@ export async function POST(request: NextRequest) {
     } else {
       budget = await prisma.budget.create({
         data: {
+          userId: category.userId,
           categoryId,
           amountLimit: parsedLimit,
           periodMonth: month,
