@@ -27,9 +27,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className="dark">
+    <html lang="id" className="dark max-w-full overflow-x-hidden w-screen">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground max-w-full overflow-x-hidden w-screen min-h-screen`}
       >
         <QueryProvider>{children}</QueryProvider>
       </body>

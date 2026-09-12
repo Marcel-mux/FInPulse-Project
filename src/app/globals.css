@@ -7,6 +7,12 @@
   --foreground: #f9fafb;
 }
 
+html,
+body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   color: var(--foreground);
   background: var(--background);
@@ -17,6 +23,18 @@ body {
 }
 
 @layer utilities {
+  /* Hide scrollbar for Chrome, Safari and Opera */
+  .no-scrollbar::-webkit-scrollbar,
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+  /* Hide scrollbar for IE, Edge and Firefox */
+  .no-scrollbar,
+  .scrollbar-none {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
   .glass-card {
     background: rgba(17, 24, 39, 0.7);
     backdrop-filter: blur(12px);

@@ -55,7 +55,7 @@ export function BudgetSection() {
 
       {/* Overall Budget Overview Card */}
       {budgets.length > 0 && (
-        <div className="p-5 rounded-3xl glass-card border border-white/[0.08] shadow-glass flex flex-col gap-4">
+        <div className="w-full p-5 rounded-3xl glass-card border border-white/[0.08] shadow-glass flex flex-col gap-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <span className="text-xs text-gray-400 font-medium">

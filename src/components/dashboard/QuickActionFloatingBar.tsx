@@ -8,7 +8,7 @@ export function QuickActionFloatingBar() {
   const { setTransactionModalOpen } = useAppStore();
 
   return (
-    <div className="no-print fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-40 w-auto px-2">
+    <div className="no-print fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom,0px))] left-1/2 -translate-x-1/2 z-40 w-auto px-2 max-w-[calc(100vw-1rem)]">
       <motion.div
         initial={{ y: 50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}

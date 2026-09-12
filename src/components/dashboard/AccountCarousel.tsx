@@ -52,13 +52,13 @@ export function AccountCarousel({
       </div>
 
       {/* Horizontal Carousel Container with smooth touch swiping */}
-      <div className="-mx-4 px-4 sm:mx-0 sm:px-0 w-[calc(100%+2rem)] sm:w-full overflow-x-auto pb-4 pt-1 scrollbar-none flex gap-3.5 sm:gap-4 snap-x snap-mandatory touch-pan-x">
+      <div className="w-full overflow-x-auto no-scrollbar scroll-smooth pb-4 pt-1 flex gap-3.5 sm:gap-4 snap-x snap-mandatory touch-pan-x">
         {isLoading ? (
           // Skeleton loader
           Array.from({ length: 3 }).map((_, idx) => (
             <div
               key={idx}
-              className="w-72 sm:w-80 h-44 rounded-2xl bg-charcoal-900/60 border border-white/[0.06] animate-pulse flex-shrink-0"
+              className="w-64 sm:w-80 h-40 sm:h-44 rounded-2xl bg-charcoal-900/60 border border-white/[0.06] animate-pulse flex-shrink-0"
             />
           ))
         ) : accounts.length === 0 ? (
@@ -82,12 +82,12 @@ export function AccountCarousel({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onAddAccount}
-          className="w-44 sm:w-48 h-44 rounded-2xl border border-dashed border-white/15 hover:border-emerald-500/50 hover:bg-emerald-500/[0.03] transition-all flex flex-col items-center justify-center gap-3 cursor-pointer text-gray-400 hover:text-emerald-400 flex-shrink-0 select-none snap-start"
+          className="w-36 sm:w-48 h-40 sm:h-44 rounded-2xl border border-dashed border-white/15 hover:border-emerald-500/50 hover:bg-emerald-500/[0.03] transition-all flex flex-col items-center justify-center gap-3 cursor-pointer text-gray-400 hover:text-emerald-400 flex-shrink-0 select-none snap-start"
         >
-          <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-emerald-500/10">
-            <Plus className="w-5 h-5" />
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-emerald-500/10">
+            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
-          <span className="text-xs font-semibold">Tambah Baru</span>
+          <span className="text-[11px] sm:text-xs font-semibold">Tambah Baru</span>
         </motion.div>
       </div>
     </section>

@@ -18,7 +18,7 @@ export function NetWorthCard({
   const [isVisible, setIsVisible] = useState(true);
 
   return (
-    <div className="relative overflow-hidden rounded-3xl p-6 sm:p-8 glass-card border border-white/[0.08] shadow-glass">
+    <div className="w-full relative overflow-hidden rounded-3xl p-6 sm:p-8 glass-card border border-white/[0.08] shadow-glass">
       {/* Ambient Glows */}
       <div className="absolute -top-24 -left-20 w-64 h-64 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute -bottom-24 -right-20 w-64 h-64 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none" />
