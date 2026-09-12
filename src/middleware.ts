@@ -1,8 +1,8 @@
-import { withAuth } from "next-auth/middleware";
-import { NextResponse } from "next/server";
+import { withAuth, NextRequestWithAuth } from "next-auth/middleware";
+import { NextFetchEvent, NextRequest, NextResponse } from "next/server";
 
-export default withAuth(
-  function middleware(req) {
+const authMiddleware = withAuth(
+  function middleware(req: NextRequestWithAuth) {
     const { pathname } = req.nextUrl;
     const token = req.nextauth.token;
 
@@ -23,7 +23,8 @@ export default withAuth(
           pathname.startsWith("/login") ||
           pathname.startsWith("/register") ||
           pathname.startsWith("/api/auth") ||
-          pathname.startsWith("/api/register")
+          pathname.startsWith("/api/register") ||
+          pathname.startsWith("/api/webhook")
         ) {
           return true;
         }
@@ -38,6 +39,17 @@ export default withAuth(
     secret: process.env.NEXTAUTH_SECRET || "b4d0d7Ht63Eb4h7gkPxyvhiYStXQzGjZNfkxT5zmjaY=",
   }
 );
+
+export default function middleware(req: NextRequest, event: NextFetchEvent) {
+  const { pathname } = req.nextUrl;
+
+  // Bypass autentikasi sepenuhnya untuk rute webhook eksternal (WhatsApp, dll)
+  if (pathname.startsWith("/api/webhook")) {
+    return NextResponse.next();
+  }
+
+  return authMiddleware(req as NextRequestWithAuth, event);
+}
 
 export const config = {
   matcher: [
