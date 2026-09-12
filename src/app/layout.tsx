@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
-import { ServiceWorkerRegister } from "@/components/pwa/ServiceWorkerRegister";
+import PwaRegister from "@/components/PwaRegister";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -55,7 +55,7 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground max-w-full overflow-x-hidden w-screen min-h-screen`}
       >
-        <ServiceWorkerRegister />
+        <PwaRegister />
         <QueryProvider>{children}</QueryProvider>
       </body>
     </html>

@@ -24,7 +24,10 @@ const authMiddleware = withAuth(
           pathname.startsWith("/register") ||
           pathname.startsWith("/api/auth") ||
           pathname.startsWith("/api/register") ||
-          pathname.startsWith("/api/webhook")
+          pathname.startsWith("/api/webhook") ||
+          pathname === "/sw.js" ||
+          pathname === "/manifest.json" ||
+          pathname.startsWith("/icons")
         ) {
           return true;
         }
@@ -43,8 +46,13 @@ const authMiddleware = withAuth(
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   const { pathname } = req.nextUrl;
 
-  // Bypass autentikasi sepenuhnya untuk rute webhook eksternal (WhatsApp, dll)
-  if (pathname.startsWith("/api/webhook")) {
+  // Bypass autentikasi sepenuhnya untuk rute webhook eksternal & aset PWA publik
+  if (
+    pathname.startsWith("/api/webhook") ||
+    pathname === "/sw.js" ||
+    pathname === "/manifest.json" ||
+    pathname.startsWith("/icons")
+  ) {
     return NextResponse.next();
   }
 
@@ -59,7 +67,10 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - fonts (local fonts)
+     * - sw.js (service worker)
+     * - manifest.json (PWA manifest)
+     * - icons (PWA icons)
      */
-    "/((?!_next/static|_next/image|favicon.ico|fonts).*)",
+    "/((?!_next/static|_next/image|favicon.ico|fonts|sw.js|manifest.json|icons).*)",
   ],
 };

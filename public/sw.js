@@ -3,11 +3,10 @@ self.addEventListener("install", (event) => {
 });
 
 self.addEventListener("activate", (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(clients.claim());
 });
 
 self.addEventListener("fetch", (event) => {
-  // Biarkan request tetap mengalir ke jaringan (network-first)
   event.respondWith(
     fetch(event.request).catch(() => caches.match(event.request))
   );
