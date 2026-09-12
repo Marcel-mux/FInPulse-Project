@@ -43,29 +43,24 @@ export async function bootstrapUserData(
     },
   });
 
-  // 2. Buat kumpulan kategori standar
+  // 2. Buat kumpulan kategori standar secara batch (1 query SQL cepat)
   const allDefaultCategories = [
     ...DEFAULT_INCOME_CATEGORIES,
     ...DEFAULT_EXPENSE_CATEGORIES,
   ];
 
-  const createdCategories = await Promise.all(
-    allDefaultCategories.map((cat) =>
-      client.category.create({
-        data: {
-          userId,
-          name: cat.name,
-          type: cat.type,
-          icon: cat.icon,
-          colorHex: cat.colorHex,
-        },
-      })
-    )
-  );
+  await client.category.createMany({
+    data: allDefaultCategories.map((cat) => ({
+      userId,
+      name: cat.name,
+      type: cat.type,
+      icon: cat.icon,
+      colorHex: cat.colorHex,
+    })),
+  });
 
   return {
     account: defaultAccount,
-    categories: createdCategories,
   };
 }
 

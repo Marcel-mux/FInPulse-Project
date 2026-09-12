@@ -1,12 +1,12 @@
 import { PrismaClient } from "@prisma/client";
-import { createClient } from "@libsql/client";
 import { PrismaLibSQL } from "@prisma/adapter-libsql";
+import { createClient } from "@libsql/client";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-function cleanEnv(val: string | undefined): string {
+function sanitize(val?: string): string {
   if (!val) return "";
   let clean = val.trim();
   if (
@@ -18,60 +18,71 @@ function cleanEnv(val: string | undefined): string {
   return clean;
 }
 
-function resolveTursoUrl(): string {
+function resolveDatabaseUrl(): string {
   const candidates = [
-    cleanEnv(process.env.TURSO_DATABASE_URL),
-    cleanEnv(process.env.DATABASE_URL),
-    cleanEnv(process.env.DATABASE_URT),
+    sanitize(process.env.TURSO_DATABASE_URL),
+    sanitize(process.env.DATABASE_URL),
+    sanitize(process.env.DATABASE_URT),
   ];
 
-  for (const candidate of candidates) {
-    if (!candidate || candidate.startsWith("file:")) continue;
-
+  // Prioritaskan koneksi Turso remote (libsql:// atau https:// atau host turso.io)
+  for (const c of candidates) {
     if (
-      candidate.startsWith("libsql://") ||
-      candidate.startsWith("https://") ||
-      candidate.startsWith("http://") ||
-      candidate.startsWith("wss://") ||
-      candidate.startsWith("ws://")
+      c &&
+      (c.startsWith("libsql://") ||
+        c.startsWith("https://") ||
+        c.includes("turso.io"))
     ) {
-      return candidate;
-    }
-
-    if (candidate.includes("turso.io")) {
-      return `libsql://${candidate}`;
+      return c;
     }
   }
 
-  return "";
+  // Fallback ke candidate yang ada (misal SQLite file:./dev.db)
+  for (const c of candidates) {
+    if (c) return c;
+  }
+
+  return "file:./dev.db";
 }
 
 function createPrismaClient(): PrismaClient {
-  const tursoUrl = resolveTursoUrl();
-  const authToken = cleanEnv(process.env.TURSO_AUTH_TOKEN);
+  const tursoUrl = resolveDatabaseUrl();
+  const authToken = sanitize(process.env.TURSO_AUTH_TOKEN);
 
-  // Hubungkan ke Turso via libSQL jika tursoUrl valid
-  if (tursoUrl) {
+  // Jika koneksi ke Turso Cloud via libSQL
+  if (
+    tursoUrl &&
+    (tursoUrl.startsWith("libsql://") ||
+      tursoUrl.startsWith("https://") ||
+      tursoUrl.includes("turso.io"))
+  ) {
+    console.log("[PRISMA] Menghubungkan ke Turso Cloud:", tursoUrl);
+    const client = createClient({
+      url: tursoUrl,
+      authToken: authToken || undefined,
+    });
+    const adapter = new PrismaLibSQL(client);
+
+    return new PrismaClient({
+      adapter,
+      log:
+        process.env.NODE_ENV === "development"
+          ? ["error", "warn"]
+          : ["error"],
+    });
+  }
+
+  // Fallback SQLite lokal (file:./dev.db) saat pengujian lokal
+  if (tursoUrl && tursoUrl.startsWith("file:")) {
     try {
-      const libsql = createClient({
-        url: tursoUrl,
-        authToken: authToken || undefined,
-      });
-      const adapter = new PrismaLibSQL(libsql);
-
-      return new PrismaClient({
-        adapter,
-        log:
-          process.env.NODE_ENV === "development"
-            ? ["error", "warn"]
-            : ["error"],
-      });
-    } catch (err) {
-      console.warn("⚠️ Warning: Gagal menginisialisasi PrismaLibSQL adapter:", err);
+      const client = createClient({ url: tursoUrl });
+      const adapter = new PrismaLibSQL(client);
+      return new PrismaClient({ adapter });
+    } catch {
+      return new PrismaClient();
     }
   }
 
-  // Fallback SQLite lokal (file:./dev.db) saat pengujian lokal tanpa Turso
   return new PrismaClient({
     log:
       process.env.NODE_ENV === "development"
@@ -80,6 +91,8 @@ function createPrismaClient(): PrismaClient {
   });
 }
 
-export const prisma = globalForPrisma.prisma ?? createPrismaClient();
+// Singleton Prisma Client instance agar tidak membuka koneksi baru berulang kali di serverless
+export const prisma = globalForPrisma.prisma || createPrismaClient();
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma;
+// Simpan di globalThis untuk mencegah duplikasi koneksi di serverless container reuse
+globalForPrisma.prisma = prisma;

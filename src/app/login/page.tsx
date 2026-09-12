@@ -66,11 +66,20 @@ function LoginForm() {
     setIsLoginLoading(true);
 
     try {
-      const result = await signIn("credentials", {
+      const signInPromise = signIn("credentials", {
         email: loginEmail.trim().toLowerCase(),
         password: loginPassword,
         redirect: false,
       });
+
+      const timeoutPromise = new Promise<{ error?: string; ok?: boolean }>((_, reject) =>
+        setTimeout(
+          () => reject(new Error("Waktu koneksi masuk habis (timeout). Silakan coba lagi.")),
+          15000
+        )
+      );
+
+      const result = await Promise.race([signInPromise, timeoutPromise]);
 
       if (result?.error) {
         setLoginError(result.error);
@@ -81,8 +90,14 @@ function LoginForm() {
       const callbackUrl = searchParams.get("callbackUrl") || "/";
       router.replace(callbackUrl);
       router.refresh();
+
+      // Safety timeout: reset loading jika navigasi browser tertunda
+      setTimeout(() => {
+        setIsLoginLoading(false);
+      }, 4000);
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Terjadi kesalahan saat masuk";
+      const errorMessage =
+        err instanceof Error ? err.message : "Terjadi kesalahan saat masuk";
       setLoginError(errorMessage);
       setIsLoginLoading(false);
     }
@@ -117,6 +132,9 @@ function LoginForm() {
 
     setIsRegisterLoading(true);
 
+    const abortController = new AbortController();
+    const timeoutId = setTimeout(() => abortController.abort(), 15000);
+
     try {
       const res = await fetch("/api/register", {
         method: "POST",
@@ -126,7 +144,10 @@ function LoginForm() {
           email: registerEmail.trim().toLowerCase(),
           password: registerPassword,
         }),
+        signal: abortController.signal,
       });
+
+      clearTimeout(timeoutId);
 
       const data = await res.json();
 
@@ -143,28 +164,48 @@ function LoginForm() {
         origin: { y: 0.6 },
       });
 
-      setRegisterSuccess("Akun berhasil dibuat! Mengalihkan ke dashboard...");
+      setRegisterSuccess("Akun berhasil dibuat! Menghubungkan sesi...");
 
-      // Otomatis login user setelah register sukses
-      const loginResult = await signIn("credentials", {
-        email: registerEmail.trim().toLowerCase(),
-        password: registerPassword,
-        redirect: false,
-      });
+      // Otomatis login user setelah register sukses dengan timeout guard
+      try {
+        const autoLoginPromise = signIn("credentials", {
+          email: registerEmail.trim().toLowerCase(),
+          password: registerPassword,
+          redirect: false,
+        });
 
-      if (loginResult?.ok) {
-        setTimeout(() => {
+        const autoLoginTimeout = new Promise<{ ok?: boolean; error?: string }>((_, reject) =>
+          setTimeout(() => reject(new Error("timeout")), 10000)
+        );
+
+        const loginResult = await Promise.race([autoLoginPromise, autoLoginTimeout]);
+
+        if (loginResult?.ok) {
+          setRegisterSuccess("Akun berhasil dibuat! Mengalihkan ke dashboard...");
           router.replace("/");
           router.refresh();
-        }, 1000);
-      } else {
+          // Safety timeout jika navigasi tertunda
+          setTimeout(() => setIsRegisterLoading(false), 4000);
+        } else {
+          setActiveTab("login");
+          setLoginEmail(registerEmail);
+          setIsRegisterLoading(false);
+        }
+      } catch {
+        // Jika auto-login timeout, alihkan ke tab login manual agar user tidak stuck
+        setIsRegisterLoading(false);
         setActiveTab("login");
         setLoginEmail(registerEmail);
-        setIsRegisterLoading(false);
       }
     } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : "Gagal mendaftar akun baru";
-      setRegisterError(errorMessage);
+      clearTimeout(timeoutId);
+      if (err instanceof Error && err.name === "AbortError") {
+        setRegisterError("Waktu pendaftaran habis (timeout). Silakan periksa koneksi internet Anda.");
+      } else {
+        const errorMessage =
+          err instanceof Error ? err.message : "Gagal mendaftar akun baru";
+        setRegisterError(errorMessage);
+      }
       setIsRegisterLoading(false);
     }
   };
