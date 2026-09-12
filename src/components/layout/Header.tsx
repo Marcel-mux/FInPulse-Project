@@ -74,9 +74,10 @@ export function Header() {
 
   return (
     <>
-      <header className="w-full flex items-center justify-between border-b border-white/[0.06] bg-charcoal-950/80 backdrop-blur-md sticky top-0 z-40 px-4 sm:px-8 pt-4 pb-3">
-        {/* Brand & Greeting */}
-        <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
+      <header className="w-full border-b border-white/[0.06] bg-charcoal-950/80 backdrop-blur-md sticky top-0 z-40">
+        <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-3 flex items-center justify-between">
+          {/* Brand & Greeting */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
             <motion.div
               whileHover={{ scale: 1.08, rotate: 5 }}
@@ -240,6 +241,7 @@ export function Header() {
               <span>Keluar</span>
             </motion.button>
           </div>
+        </div>
         </div>
       </header>
 

@@ -110,7 +110,7 @@ export function AccountCard({
   const IconComponent = config.icon;
 
   return (
-    <div style={{ perspective: 1000 }} className="h-full">
+    <div style={{ perspective: 1000 }} className="h-full w-auto md:w-full">
       <motion.div
         ref={cardRef}
         onMouseMove={handleMouseMove}
@@ -123,7 +123,7 @@ export function AccountCard({
         }}
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
-        className={`group relative w-64 sm:w-80 h-40 sm:h-44 rounded-2xl p-4 sm:p-5 cursor-pointer select-none transition-shadow duration-300 flex flex-col justify-between overflow-hidden bg-gradient-to-br ${config.gradient} border ${config.border} ${config.glowClass} ${
+        className={`group relative w-64 sm:w-72 md:w-full h-40 sm:h-44 rounded-2xl p-4 sm:p-5 cursor-pointer select-none transition-shadow duration-300 flex flex-col justify-between overflow-hidden bg-gradient-to-br ${config.gradient} border ${config.border} ${config.glowClass} ${
           isSelected ? "ring-2 ring-emerald-400 ring-offset-2 ring-offset-charcoal-950" : ""
         }`}
       >

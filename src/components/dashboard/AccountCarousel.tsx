@@ -51,23 +51,23 @@ export function AccountCarousel({
         </div>
       </div>
 
-      {/* Horizontal Carousel Container with smooth touch swiping */}
-      <div className="w-full overflow-x-auto no-scrollbar scroll-smooth pb-4 pt-1 flex gap-3.5 sm:gap-4 snap-x snap-mandatory touch-pan-x">
+      {/* Horizontal Carousel on Mobile / Responsive Grid on Desktop */}
+      <div className="w-full flex md:grid md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 overflow-x-auto md:overflow-visible no-scrollbar pb-4 pt-1 snap-x snap-mandatory touch-pan-x">
         {isLoading ? (
           // Skeleton loader
           Array.from({ length: 3 }).map((_, idx) => (
             <div
               key={idx}
-              className="w-64 sm:w-80 h-40 sm:h-44 rounded-2xl bg-charcoal-900/60 border border-white/[0.06] animate-pulse flex-shrink-0"
+              className="w-64 sm:w-72 md:w-full h-40 sm:h-44 rounded-2xl bg-charcoal-900/60 border border-white/[0.06] animate-pulse shrink-0 md:shrink"
             />
           ))
         ) : accounts.length === 0 ? (
-          <div className="w-full p-8 rounded-2xl border border-dashed border-white/10 text-center text-gray-400 text-sm">
+          <div className="w-full md:col-span-2 xl:col-span-3 p-8 rounded-2xl border border-dashed border-white/10 text-center text-gray-400 text-sm">
             Belum ada akun dompet aktif.
           </div>
         ) : (
           accounts.map((account) => (
-            <div key={account.id} className="snap-start flex-shrink-0">
+            <div key={account.id} className="snap-start shrink-0 md:shrink w-auto md:w-full">
               <AccountCard
                 account={account}
                 isSelected={selectedAccountId === account.id}
@@ -82,7 +82,7 @@ export function AccountCarousel({
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={onAddAccount}
-          className="w-36 sm:w-48 h-40 sm:h-44 rounded-2xl border border-dashed border-white/15 hover:border-emerald-500/50 hover:bg-emerald-500/[0.03] transition-all flex flex-col items-center justify-center gap-3 cursor-pointer text-gray-400 hover:text-emerald-400 flex-shrink-0 select-none snap-start"
+          className="w-36 sm:w-48 md:w-full h-40 sm:h-44 rounded-2xl border border-dashed border-white/15 hover:border-emerald-500/50 hover:bg-emerald-500/[0.03] transition-all flex flex-col items-center justify-center gap-3 cursor-pointer text-gray-400 hover:text-emerald-400 shrink-0 md:shrink select-none snap-start"
         >
           <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-emerald-500/10">
             <Plus className="w-4 h-4 sm:w-5 sm:h-5" />

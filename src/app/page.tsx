@@ -5,6 +5,7 @@ import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
 import { BudgetSection } from "@/components/budget/BudgetSection";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
+import { QuickSpendingWidget } from "@/components/dashboard/QuickSpendingWidget";
 import { QuickActionFloatingBar } from "@/components/dashboard/QuickActionFloatingBar";
 import { GlobalModals } from "@/components/layout/GlobalModals";
 import { useAccounts, useRecentTransactions } from "@/hooks/useFinance";
@@ -33,36 +34,47 @@ export default function DashboardPage() {
       {/* Top Header */}
       <Header />
 
-      {/* Main Dashboard Content */}
-      <main className="flex-1 w-full max-w-md md:max-w-3xl lg:max-w-5xl mx-auto px-4 sm:px-6 md:px-8 py-6 sm:py-8 pb-28 sm:pb-32 flex flex-col gap-6 sm:gap-8">
-        {/* Total Net Worth Overview */}
-        <NetWorthCard
-          totalNetWorth={totalNetWorth}
-          activeAccountsCount={activeAccountsCount}
-          isLoading={isAccountsLoading}
-        />
+      {/* Main Dashboard Content - Aligned to max-w-7xl with Multi-Column Grid on Desktop */}
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-28 sm:pb-32">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+          {/* Kolom Kiri / Utama (lg:col-span-8) */}
+          <div className="lg:col-span-8 flex flex-col gap-6 sm:gap-8">
+            {/* Total Net Worth Overview */}
+            <NetWorthCard
+              totalNetWorth={totalNetWorth}
+              activeAccountsCount={activeAccountsCount}
+              isLoading={isAccountsLoading}
+            />
 
-        {/* Multi-Account Horizontal Carousel */}
-        <AccountCarousel
-          accounts={accounts}
-          isLoading={isAccountsLoading}
-          selectedAccountId={selectedAccountId}
-          onSelectAccount={(id) =>
-            setSelectedAccountId(selectedAccountId === id ? null : id)
-          }
-          onAddAccount={() => openAccountForm(null)}
-          onManageAccounts={() => setManageAccountsOpen(true)}
-        />
+            {/* Multi-Account Horizontal Carousel (Mobile) / Grid (Desktop) */}
+            <AccountCarousel
+              accounts={accounts}
+              isLoading={isAccountsLoading}
+              selectedAccountId={selectedAccountId}
+              onSelectAccount={(id) =>
+                setSelectedAccountId(selectedAccountId === id ? null : id)
+              }
+              onAddAccount={() => openAccountForm(null)}
+              onManageAccounts={() => setManageAccountsOpen(true)}
+            />
 
-        {/* Budgeting & Burn Rate Visual Module */}
-        <BudgetSection />
+            {/* Recent Activity Feed */}
+            <RecentActivityFeed
+              transactions={transactions}
+              isLoading={isTransactionsLoading}
+              onAddTransaction={() => setTransactionModalOpen(true, "expense")}
+            />
+          </div>
 
-        {/* Recent Activity Feed */}
-        <RecentActivityFeed
-          transactions={transactions}
-          isLoading={isTransactionsLoading}
-          onAddTransaction={() => setTransactionModalOpen(true, "expense")}
-        />
+          {/* Kolom Kanan / Sidebar Widget (lg:col-span-4) */}
+          <div className="lg:col-span-4 flex flex-col gap-6 sm:gap-8">
+            {/* Ringkasan Anggaran Bulanan (Budgets) */}
+            <BudgetSection />
+
+            {/* Breakdown Kategori Belanja / Ringkasan Cepat */}
+            <QuickSpendingWidget />
+          </div>
+        </div>
       </main>
 
       {/* Quick Action Floating Bar (Fixed at bottom) */}
