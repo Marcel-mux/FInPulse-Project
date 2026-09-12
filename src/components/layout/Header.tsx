@@ -7,6 +7,7 @@ import {
   Activity,
   BarChart2,
   Bell,
+  Bot,
   Download,
   FolderTree,
   LayoutDashboard,
@@ -33,6 +34,7 @@ export function Header() {
     setManageAccountsOpen,
     setManageCategoriesOpen,
     setExportModalOpen,
+    setWhatsAppModalOpen,
     openBudgetForm,
     setTransactionModalOpen,
   } = useAppStore();
@@ -189,6 +191,18 @@ export function Header() {
           >
             <Download className="w-4 h-4 text-emerald-400" />
             <span className="hidden md:inline">Ekspor</span>
+          </motion.button>
+
+          {/* WhatsApp AI Bot Button (Desktop / Tablet) */}
+          <motion.button
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={() => setWhatsAppModalOpen(true)}
+            className="hidden sm:flex items-center gap-1.5 px-2.5 sm:px-3 py-2 min-h-[40px] rounded-xl bg-charcoal-900/80 hover:bg-charcoal-900 border border-white/[0.08] hover:border-emerald-500/30 text-xs font-semibold text-gray-300 hover:text-emerald-400 transition-all cursor-pointer"
+            title="Bot WhatsApp AI (Catat Otomatis via WA)"
+          >
+            <Bot className="w-4 h-4 text-emerald-400" />
+            <span className="hidden md:inline">Bot WA</span>
           </motion.button>
 
           <div className="h-5 w-[1px] bg-white/10 hidden sm:block mx-1" />
@@ -407,6 +421,19 @@ export function Header() {
                       >
                         <Download className="w-4 h-4 text-emerald-400 shrink-0" />
                         <span>Ekspor Data (PDF/Excel)</span>
+                      </button>
+
+                      {/* Bot WhatsApp AI */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setWhatsAppModalOpen(true);
+                        }}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold text-gray-300 hover:bg-white/[0.05] hover:text-emerald-400 transition-all w-full text-left cursor-pointer"
+                      >
+                        <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Bot WhatsApp AI</span>
                       </button>
                     </nav>
                   </div>

@@ -30,6 +30,9 @@ interface AppState {
   // Export report modal
   isExportModalOpen: boolean;
 
+  // WhatsApp bot integration modal
+  isWhatsAppModalOpen: boolean;
+
   // Actions
   setTransactionModalOpen: (open: boolean, defaultType?: TransactionType) => void;
   setActiveTransactionType: (type: TransactionType) => void;
@@ -50,6 +53,7 @@ interface AppState {
   closeBudgetForm: () => void;
 
   setExportModalOpen: (open: boolean) => void;
+  setWhatsAppModalOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -72,6 +76,7 @@ export const useAppStore = create<AppState>((set) => ({
   editingBudget: null,
 
   isExportModalOpen: false,
+  isWhatsAppModalOpen: false,
 
   setTransactionModalOpen: (open, defaultType) =>
     set((state) => ({
@@ -104,4 +109,5 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isBudgetModalOpen: false, editingBudget: null }),
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
+  setWhatsAppModalOpen: (open) => set({ isWhatsAppModalOpen: open }),
 }));

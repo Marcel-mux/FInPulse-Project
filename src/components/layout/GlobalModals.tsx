@@ -9,6 +9,7 @@ import { ManageAccountsModal } from "@/components/modals/ManageAccountsModal";
 import { ManageCategoriesModal } from "@/components/modals/ManageCategoriesModal";
 import { BudgetFormModal } from "@/components/modals/BudgetFormModal";
 import { ExportModal } from "@/components/modals/ExportModal";
+import { WhatsAppIntegrationModal } from "@/components/modals/WhatsAppIntegrationModal";
 import { PrintableReport } from "@/components/export/PrintableReport";
 import { useAccounts, useRecentTransactions } from "@/hooks/useFinance";
 import { AnalyticsSummary, TransactionWithRelations } from "@/types";
@@ -53,6 +54,7 @@ export function GlobalModals() {
       <ManageCategoriesModal />
       <BudgetFormModal />
       <ExportModal />
+      <WhatsAppIntegrationModal />
 
       {/* Hidden printable report (A4 vector output) */}
       <PrintableReport
