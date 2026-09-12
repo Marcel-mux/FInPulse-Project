@@ -35,7 +35,7 @@ export function BudgetSection() {
   };
 
   return (
-    <section className="w-full flex flex-col gap-4">
+    <section id="budget-section" className="w-full flex flex-col gap-4">
       {/* Section Header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">

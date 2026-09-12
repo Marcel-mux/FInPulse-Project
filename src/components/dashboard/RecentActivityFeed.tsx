@@ -84,7 +84,7 @@ export function RecentActivityFeed({
 
   if (transactions.length === 0) {
     return (
-      <section className="w-full flex flex-col gap-3">
+      <section id="recent-activity" className="w-full flex flex-col gap-3">
         <div className="flex items-center gap-2 px-1">
           <Clock className="w-4 h-4 text-emerald-400" />
           <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
@@ -97,7 +97,7 @@ export function RecentActivityFeed({
   }
 
   return (
-    <section className="w-full flex flex-col gap-3">
+    <section id="recent-activity" className="w-full flex flex-col gap-3">
       {/* Feed Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 px-1">
         <div className="flex items-center gap-2">
