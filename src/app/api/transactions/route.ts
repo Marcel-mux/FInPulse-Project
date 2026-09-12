@@ -9,8 +9,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "10", 10);
     const type = searchParams.get("type");
     const accountId = searchParams.get("accountId");
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request);
 
-    const where: Record<string, unknown> = {};
+    const where: Record<string, unknown> = { userId };
 
     if (type && ["income", "expense", "transfer"].includes(type)) {
       where.type = type;

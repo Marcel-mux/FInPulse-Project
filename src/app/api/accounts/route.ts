@@ -3,10 +3,14 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request);
+
     const accounts = await prisma.account.findMany({
       where: {
+        userId,
         isActive: true,
       },
       orderBy: {

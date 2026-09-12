@@ -10,19 +10,31 @@ import {
   Download,
   FolderTree,
   LayoutDashboard,
+  LogOut,
   WalletCards,
 } from "lucide-react";
 import { useState, useEffect } from "react";
+import { useSession, signOut } from "next-auth/react";
 import { useAppStore } from "@/store/useAppStore";
 
 export function Header() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   const [currentDate, setCurrentDate] = useState<string>("");
   const {
     setManageAccountsOpen,
     setManageCategoriesOpen,
     setExportModalOpen,
   } = useAppStore();
+
+  const userInitials = session?.user?.name
+    ? session.user.name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .slice(0, 2)
+        .toUpperCase()
+    : "FP";
 
   useEffect(() => {
     const now = new Date();
@@ -155,15 +167,43 @@ export function Header() {
           <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-500 ring-2 ring-charcoal-950" />
         </motion.button>
 
-        {/* User Avatar */}
-        <motion.div
-          whileHover={{ scale: 1.05 }}
-          className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 p-[1px] cursor-pointer"
-        >
-          <div className="w-full h-full rounded-[11px] bg-charcoal-900 flex items-center justify-center font-bold text-xs text-indigo-300">
-            FP
+        {/* User Profile & Logout Button */}
+        <div className="flex items-center gap-1.5 sm:gap-2 pl-1">
+          <div
+            className="flex items-center gap-2"
+            title={session?.user?.email || "Akun FinPulse"}
+          >
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 p-[1px] cursor-default shrink-0"
+            >
+              <div className="w-full h-full rounded-[11px] bg-charcoal-900 flex items-center justify-center font-bold text-xs text-indigo-300">
+                {userInitials}
+              </div>
+            </motion.div>
+            <div className="hidden lg:flex flex-col text-left">
+              <span className="text-xs font-bold text-gray-200 truncate max-w-[110px]">
+                {session?.user?.name || "Pengguna"}
+              </span>
+              <span className="text-[10px] text-gray-400 truncate max-w-[110px]">
+                {session?.user?.email || ""}
+              </span>
+            </div>
           </div>
-        </motion.div>
+
+          {/* Logout Button */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="flex items-center gap-1.5 px-2.5 sm:px-3 py-2 min-h-[40px] rounded-xl bg-crimson-500/10 hover:bg-crimson-500/20 border border-crimson-500/20 hover:border-crimson-500/40 text-xs font-semibold text-crimson-400 hover:text-crimson-300 transition-all cursor-pointer"
+            title="Keluar dari akun (Logout)"
+            aria-label="Keluar dari akun"
+          >
+            <LogOut className="w-4 h-4" />
+            <span className="hidden sm:inline">Keluar</span>
+          </motion.button>
+        </div>
       </div>
     </header>
   );

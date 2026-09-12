@@ -16,8 +16,12 @@ export async function GET(request: NextRequest) {
       10
     );
 
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request);
+
     const budgets = await prisma.budget.findMany({
       where: {
+        userId,
         periodMonth: month,
         periodYear: year,
       },
@@ -45,6 +49,7 @@ export async function GET(request: NextRequest) {
       budgets.map(async (b) => {
         const expenseAgg = await prisma.transaction.aggregate({
           where: {
+            userId,
             type: "expense",
             categoryId: b.categoryId,
             date: {

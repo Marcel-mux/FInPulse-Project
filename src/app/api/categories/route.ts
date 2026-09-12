@@ -7,8 +7,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request);
 
-    const where: Record<string, string> = {};
+    const where: Record<string, string> = { userId };
     if (type && (type === "income" || type === "expense")) {
       where.type = type;
     }

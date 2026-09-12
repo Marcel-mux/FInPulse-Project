@@ -81,6 +81,18 @@ export async function getAuthUserId(
     return body.userId;
   }
 
+  // Ambil dari sesi NextAuth jika user sedang login
+  try {
+    const { getServerSession } = await import("next-auth");
+    const { authOptions } = await import("@/lib/auth");
+    const session = await getServerSession(authOptions);
+    if (session?.user && (session.user as { id?: string }).id) {
+      return (session.user as { id: string }).id;
+    }
+  } catch {
+    // Sesi NextAuth belum tersedia / bukan dalam request context
+  }
+
   if (request) {
     const headerUserId = request.headers.get("x-user-id");
     if (headerUserId) return headerUserId;

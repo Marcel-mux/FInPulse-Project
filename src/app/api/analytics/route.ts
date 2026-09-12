@@ -61,9 +61,13 @@ export async function GET(request: NextRequest) {
         startDate.setHours(0, 0, 0, 0);
     }
 
+    const { getAuthUserId } = await import("@/lib/userBootstrap");
+    const userId = await getAuthUserId(request);
+
     // Ambil transaksi dalam rentang tanggal
     const transactions = await prisma.transaction.findMany({
       where: {
+        userId,
         date: {
           gte: startDate,
           lte: endDate,
