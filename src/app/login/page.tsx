@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import { signIn, useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,17 +20,18 @@ import {
 import confetti from "canvas-confetti";
 
 function LoginForm() {
-  const router = useRouter();
   const searchParams = useSearchParams();
   const { status } = useSession();
 
   // Redirect jika sudah login
   useEffect(() => {
     if (status === "authenticated") {
-      const callbackUrl = searchParams.get("callbackUrl") || "/";
-      router.replace(callbackUrl);
+      const callbackUrl = searchParams.get("callbackUrl");
+      const targetUrl =
+        callbackUrl && !callbackUrl.includes("/login") ? callbackUrl : "/";
+      window.location.href = targetUrl;
     }
-  }, [status, router, searchParams]);
+  }, [status, searchParams]);
 
   // Tab aktif: 'login' | 'register'
   const initialTab = searchParams.get("tab") === "register" ? "register" : "login";
@@ -66,40 +67,26 @@ function LoginForm() {
     setIsLoginLoading(true);
 
     try {
-      const signInPromise = signIn("credentials", {
+      const res = await signIn("credentials", {
         email: loginEmail.trim().toLowerCase(),
         password: loginPassword,
         redirect: false,
       });
 
-      const timeoutPromise = new Promise<{ error?: string; ok?: boolean }>((_, reject) =>
-        setTimeout(
-          () => reject(new Error("Waktu koneksi masuk habis (timeout). Silakan coba lagi.")),
-          15000
-        )
-      );
-
-      const result = await Promise.race([signInPromise, timeoutPromise]);
-
-      if (result?.error) {
-        setLoginError(result.error);
-        setIsLoginLoading(false);
-        return;
+      if (res?.error) {
+        setLoginError("Email atau kata sandi salah");
+      } else if (res?.ok) {
+        // Refresh dan arahkan ke dashboard
+        const callbackUrl = searchParams.get("callbackUrl");
+        const targetUrl =
+          callbackUrl && !callbackUrl.includes("/login") ? callbackUrl : "/";
+        window.location.href = targetUrl;
       }
-
-      const callbackUrl = searchParams.get("callbackUrl") || "/";
-      router.replace(callbackUrl);
-      router.refresh();
-
-      // Safety timeout: reset loading jika navigasi browser tertunda
-      setTimeout(() => {
-        setIsLoginLoading(false);
-      }, 4000);
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Terjadi kesalahan saat masuk";
-      setLoginError(errorMessage);
-      setIsLoginLoading(false);
+    } catch (err) {
+      console.error(err);
+      setLoginError("Terjadi kesalahan jaringan/sistem");
+    } finally {
+      setIsLoginLoading(false); // Pastikan loading selalu berhenti
     }
   };
 
@@ -166,33 +153,24 @@ function LoginForm() {
 
       setRegisterSuccess("Akun berhasil dibuat! Menghubungkan sesi...");
 
-      // Otomatis login user setelah register sukses dengan timeout guard
+      // Otomatis login user setelah register sukses
       try {
-        const autoLoginPromise = signIn("credentials", {
+        const loginRes = await signIn("credentials", {
           email: registerEmail.trim().toLowerCase(),
           password: registerPassword,
           redirect: false,
         });
 
-        const autoLoginTimeout = new Promise<{ ok?: boolean; error?: string }>((_, reject) =>
-          setTimeout(() => reject(new Error("timeout")), 10000)
-        );
-
-        const loginResult = await Promise.race([autoLoginPromise, autoLoginTimeout]);
-
-        if (loginResult?.ok) {
+        if (loginRes?.ok) {
           setRegisterSuccess("Akun berhasil dibuat! Mengalihkan ke dashboard...");
-          router.replace("/");
-          router.refresh();
-          // Safety timeout jika navigasi tertunda
-          setTimeout(() => setIsRegisterLoading(false), 4000);
+          window.location.href = "/";
         } else {
           setActiveTab("login");
           setLoginEmail(registerEmail);
           setIsRegisterLoading(false);
         }
-      } catch {
-        // Jika auto-login timeout, alihkan ke tab login manual agar user tidak stuck
+      } catch (err) {
+        console.error(err);
         setIsRegisterLoading(false);
         setActiveTab("login");
         setLoginEmail(registerEmail);
@@ -206,6 +184,9 @@ function LoginForm() {
           err instanceof Error ? err.message : "Gagal mendaftar akun baru";
         setRegisterError(errorMessage);
       }
+      setIsRegisterLoading(false);
+    } finally {
+      // Pastikan loading selalu berhenti
       setIsRegisterLoading(false);
     }
   };

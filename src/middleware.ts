@@ -35,6 +35,7 @@ export default withAuth(
     pages: {
       signIn: "/login",
     },
+    secret: process.env.NEXTAUTH_SECRET || "b4d0d7Ht63Eb4h7gkPxyvhiYStXQzGjZNfkxT5zmjaY=",
   }
 );
 
