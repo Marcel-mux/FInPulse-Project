@@ -416,7 +416,139 @@ export async function POST(request: NextRequest) {
 
         return { reply, bill: newBill };
       }
-      // Skenario 1: SET_PAYLATER_LIMIT
+
+      // Skenario 1: CREATE_LOAN (Pencatatan Pinjaman Tunai / Cicilan Paylater)
+      if (parsed.action === "CREATE_LOAN") {
+        const provider = parsed.paylaterProvider || parsed.accountName || "Akulaku";
+        const cleanProvider = provider.trim();
+        let paylaterAccount = matchPaylaterAccount(cleanProvider);
+
+        // Jika akun paylater belum terdaftar, buat otomatis dengan plafon minimal = amount
+        if (!paylaterAccount) {
+          paylaterAccount = await tx.account.create({
+            data: {
+              userId: user!.id,
+              name: cleanProvider,
+              type: "credit",
+              accountCategory: "PAYLATER",
+              creditLimit: amount,
+              balance: amount,
+              currency: "IDR",
+              colorHex: "#f97316",
+              icon: "credit-card",
+              isActive: true,
+            },
+          });
+        }
+
+        // Cari rekening tujuan pencairan dana (targetAccount / sourceAccount)
+        const regularAccounts = user!.accounts.filter(
+          (a) => a.accountCategory !== "PAYLATER" && a.id !== paylaterAccount!.id
+        );
+        const targetCandidate = parsed.toAccountName || parsed.accountName;
+        const targetAccount =
+          regularAccounts.find(
+            (a) =>
+              targetCandidate &&
+              (a.name.toLowerCase() === targetCandidate.toLowerCase() ||
+                a.name.toLowerCase().includes(targetCandidate.toLowerCase()) ||
+                targetCandidate.toLowerCase().includes(a.name.toLowerCase()))
+          ) ||
+          regularAccounts[0] ||
+          user!.accounts[0];
+
+        if (!targetAccount) {
+          throw new Error("Tidak ditemukan rekening bank/dompet untuk pencairan dana pinjaman.");
+        }
+
+        const totalAmount = amount;
+        const tenor = parsed.tenor && parsed.tenor >= 1 ? parsed.tenor : 3;
+        const monthlyTotal =
+          parsed.monthlyTotal && parsed.monthlyTotal > 0
+            ? parsed.monthlyTotal
+            : Math.round(totalAmount / tenor);
+        const monthlyPrincipal = Math.round(totalAmount / tenor);
+        const monthlyInterest = Math.max(0, monthlyTotal - monthlyPrincipal);
+        const dueDay =
+          parsed.dueDay && parsed.dueDay >= 1 && parsed.dueDay <= 31
+            ? parsed.dueDay
+            : 20;
+
+        // Kurangi sisa limit paylater sebesar totalAmount
+        const updatedPaylater = await tx.account.update({
+          where: { id: paylaterAccount.id },
+          data: {
+            balance: {
+              decrement: totalAmount,
+            },
+          },
+        });
+
+        // Tambah saldo rekening penerima/pencairan sebesar totalAmount
+        const updatedTarget = await tx.account.update({
+          where: { id: targetAccount.id },
+          data: {
+            balance: {
+              increment: totalAmount,
+            },
+          },
+        });
+
+        // Catat transaksi pencairan dana
+        const loanTitle =
+          parsed.description?.trim() || `Pinjaman Tunai ${paylaterAccount.name}`;
+
+        await tx.transaction.create({
+          data: {
+            userId: user!.id,
+            type: "transfer",
+            amount: totalAmount,
+            accountId: paylaterAccount.id,
+            toAccountId: targetAccount.id,
+            date: new Date(),
+            description: `Pencairan: ${loanTitle} (${tenor} bln)`,
+            tags: "#whatsapp #loan #disbursement #paylater",
+          },
+        });
+
+        // Buat record Loan di database
+        const newLoan = await tx.loan.create({
+          data: {
+            userId: user!.id,
+            name: loanTitle,
+            totalAmount,
+            tenor,
+            monthlyPrincipal,
+            monthlyInterest,
+            monthlyTotal,
+            dueDay,
+            remainingMonths: tenor,
+            status: "ACTIVE",
+            paylaterAccountId: paylaterAccount.id,
+            sourceAccountId: targetAccount.id,
+          },
+        });
+
+        const reply =
+          `💸 *Pinjaman / Cicilan Berhasil Dicatat!*\n\n` +
+          `• *Pinjaman*: ${newLoan.name}\n` +
+          `• *Plafon Pokok*: ${formatRupiah(totalAmount)}\n` +
+          `• *Tenor*: ${tenor} bulan\n` +
+          `• *Dana Cair Ke*: ${targetAccount.name} (+${formatRupiah(totalAmount)})\n` +
+          `• *Saldo Baru ${targetAccount.name}*: ${formatRupiah(updatedTarget.balance)}\n` +
+          `• *Sisa Limit ${paylaterAccount.name}*: ${formatRupiah(updatedPaylater.balance)}\n\n` +
+          `📋 *Rincian Cicilan Bulanan:*\n` +
+          `• *Pokok Bulanan*: ${formatRupiah(monthlyPrincipal)}\n` +
+          `• *Bunga Pinjaman*: ${formatRupiah(monthlyInterest)}\n` +
+          `• *Total Tagihan/Bulan*: *${formatRupiah(monthlyTotal)}*\n` +
+          `• *Jatuh Tempo*: Setiap tanggal ${dueDay}\n` +
+          `• *Rekening Pembayar*: ${targetAccount.name}\n\n` +
+          `_Cicilan akan dipotong otomatis setiap tanggal ${dueDay}. Pokok akan memulihkan limit Paylater & bunga dicatat sebagai beban pengeluaran._`;
+
+        return { reply, loan: newLoan };
+      }
+
+      // Skenario 2: SET_PAYLATER_LIMIT
       if (parsed.action === "SET_PAYLATER_LIMIT") {
         const provider = parsed.paylaterProvider || parsed.accountName || "SPayLater";
         const cleanProvider = provider.trim();
@@ -725,7 +857,12 @@ export async function POST(request: NextRequest) {
       reply: executionResult.reply,
       message: executionResult.reply,
       fonnte: fonnteRes,
-      data: executionResult.transaction,
+      data:
+        ("transaction" in executionResult && executionResult.transaction) ||
+        ("loan" in executionResult && executionResult.loan) ||
+        ("bill" in executionResult && executionResult.bill) ||
+        ("account" in executionResult && executionResult.account) ||
+        null,
     });
   } catch (error) {
     console.error("[WHATSAPP WEBHOOK ERROR]", error);

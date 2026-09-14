@@ -4,6 +4,7 @@ import { Header } from "@/components/layout/Header";
 import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
 import { PaylaterSection } from "@/components/paylater/PaylaterSection";
+import { LoanSection } from "@/components/loans/LoanSection";
 import { BillSection } from "@/components/bills/BillSection";
 import { BudgetSection } from "@/components/budget/BudgetSection";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
@@ -65,6 +66,11 @@ export default function DashboardPage() {
             {/* Section Khusus: Limit Paylater & Fasilitas Kredit */}
             <div id="paylater-section">
               <PaylaterSection />
+            </div>
+
+            {/* Section Khusus: Pinjaman & Cicilan Paylater */}
+            <div id="loan-section">
+              <LoanSection />
             </div>
 
             {/* Recent Activity Feed */}

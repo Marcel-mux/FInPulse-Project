@@ -25,7 +25,8 @@ export type TransactionAction =
   | "TRANSACTION"
   | "SET_PAYLATER_LIMIT"
   | "PAY_BILL_PAYLATER"
-  | "CREATE_BILL";
+  | "CREATE_BILL"
+  | "CREATE_LOAN";
 
 export interface ParsedTransactionResult {
   isTransaction: boolean;
@@ -38,6 +39,10 @@ export interface ParsedTransactionResult {
   toAccountName?: string | null;
   paylaterProvider?: string | null;
   dueDay?: number | null;
+  tenor?: number | null;
+  monthlyTotal?: number | null;
+  monthlyPrincipal?: number | null;
+  monthlyInterest?: number | null;
   isRecurring?: boolean;
   replyMessage?: string | null;
 }
@@ -213,7 +218,75 @@ function fallbackRuleBasedParser(
     matchedAcc = accounts.find((a) => lower.includes(a.name.toLowerCase())) || accounts[0];
   }
 
-  // 3. Intent C: CREATE_BILL (Pendaftaran Tagihan Berulang)
+  // 3. Intent C: CREATE_LOAN (Pencatatan Pinjaman Tunai / Cicilan Paylater)
+  const isLoanIntent =
+    lower.includes("pinjam") ||
+    lower.includes("pinjaman") ||
+    (lower.includes("cicil") && (lower.includes("tenor") || lower.includes("cair")));
+
+  if (isLoanIntent) {
+    const providerName = detectedPaylater?.name || "Akulaku";
+
+    // Tenor ekstraksi: misal "tenor 3 bulan", "tenor 3", "3 bulan", "3x"
+    const tenorMatch =
+      lower.match(/tenor\s*(\d+)/i) ||
+      lower.match(/(\d+)\s*(?:bulan|bln)/i) ||
+      lower.match(/(\d+)x/i);
+    const tenor = tenorMatch ? parseInt(tenorMatch[1], 10) : 3;
+
+    // Target pencairan: misal "cair ke BCA", "masuk BCA", "ke BCA", "cair BCA"
+    const cairMatch = lower.match(/(?:cair\s*(?:ke)?|masuk\s*(?:ke)?)\s*([a-zA-Z0-9]+)/i);
+    const targetCandidate = cairMatch ? cairMatch[1].toLowerCase() : "";
+    const targetAcc =
+      accounts.find(
+        (a) =>
+          a.accountCategory !== "PAYLATER" &&
+          (a.name.toLowerCase().includes(targetCandidate) ||
+            targetCandidate.includes(a.name.toLowerCase()))
+      ) ||
+      accounts.find((a) => a.accountCategory !== "PAYLATER") ||
+      accounts[0];
+
+    // Cicilan ekstraksi: misal "cicilan 383rb", "cicilan 383k", "angsuran 383000"
+    const cicilanMatch = lower.match(
+      /(?:cicilan|angsuran)\s*(\d+(?:[.,]\d+)?)\s*(k|rb|ribu|jt|juta)?/i
+    );
+    let monthlyTotal = Math.round(parsedAmount / tenor);
+    if (cicilanMatch) {
+      let cNum = parseFloat(cicilanMatch[1].replace(",", "."));
+      const cUnit = (cicilanMatch[2] || "").toLowerCase();
+      if (cUnit === "k" || cUnit === "rb" || cUnit === "ribu") cNum *= 1000;
+      if (cUnit === "jt" || cUnit === "juta") cNum *= 1000000;
+      monthlyTotal = Math.round(cNum);
+    }
+
+    const dueDayMatch = lower.match(/(?:tiap|setiap)?\s*(?:tanggal|tgl)\s*(\d+)/i);
+    const parsedDueDay = dueDayMatch ? parseInt(dueDayMatch[1], 10) : 20;
+
+    const monthlyPrincipal = Math.round(parsedAmount / tenor);
+    const monthlyInterest = Math.max(0, monthlyTotal - monthlyPrincipal);
+
+    return {
+      isTransaction: true,
+      action: "CREATE_LOAN",
+      type: "TRANSFER",
+      amount: parsedAmount,
+      accountName: providerName,
+      categoryName: "Bunga / Biaya Pinjaman",
+      description: `Pinjaman Tunai ${providerName}`,
+      toAccountName: targetAcc?.name || "BCA",
+      paylaterProvider: providerName,
+      tenor,
+      monthlyTotal,
+      monthlyPrincipal,
+      monthlyInterest,
+      dueDay: parsedDueDay,
+      isRecurring: true,
+      replyMessage: null,
+    };
+  }
+
+  // 4. Intent D: CREATE_BILL (Pendaftaran Tagihan Berulang)
   const isBillRegistration =
     lower.includes("tiap tanggal") ||
     lower.includes("setiap tanggal") ||
@@ -342,7 +415,20 @@ Aturan Penentuan Aksi (action):
    - Set amount = Angka nominal yang dibayar (contoh: 300000).
    - Set isTransaction = true.
 
-4. "TRANSACTION":
+4. "CREATE_LOAN":
+   - Jika pengguna mencatat, meminjam, atau mencairkan pinjaman tunai / cicilan Paylater (Akulaku, Kredivo, SPayLater, GoPay Later, dll).
+   - Contoh: "Pinjam di Akulaku 1jt tenor 3 bulan cair ke BCA, cicilan 383rb tiap tanggal 20", "Pinjaman tunai Kredivo 2 juta tenor 6 bulan masuk Mandiri angsuran 390rb tgl 15".
+   - Set action = "CREATE_LOAN".
+   - Set paylaterProvider = Nama provider pemberi pinjaman (contoh: "Akulaku", "Kredivo", "SPayLater").
+   - Set amount = Angka total pokok pinjaman murni (contoh: 1000000).
+   - Set tenor = Jumlah bulan tenor cicilan berupa angka (contoh: 3).
+   - Set toAccountName = Nama rekening pencairan dana (contoh: "BCA").
+   - Set monthlyTotal = Angka nominal angsuran/cicilan per bulan jika disebutkan (contoh: 383000).
+   - Set dueDay = Tanggal jatuh tempo bulanan berupa angka 1 - 31 (contoh: 20).
+   - Set description = Keterangan pinjaman (contoh: "Pinjaman Tunai Akulaku").
+   - Set isTransaction = true.
+
+5. "TRANSACTION":
    - Untuk transaksi biasa (EXPENSE, INCOME, atau TRANSFER), termasuk belanja yang menggunakan akun Paylater.
    - Contoh: "Beli sepatu 300rb pakai SPayLater", "Makan siang 35k pakai Kas", "Gaji freelance 2jt masuk BCA", "Transfer 100rb dari BCA ke ShopeePay".
    - Jika belanja menggunakan paylater, accountName adalah nama provider paylater tersebut (contoh: "SPayLater"), dan type = "EXPENSE".
@@ -403,12 +489,22 @@ Aturan Ekstraksi Nominal (amount):
             dueDay: {
               type: Type.NUMBER,
               description:
-                "Tanggal jatuh tempo bulanan (1-31) jika merupakan pendaftaran tagihan rutin.",
+                "Tanggal jatuh tempo bulanan (1-31) jika merupakan pendaftaran tagihan rutin atau cicilan.",
+            },
+            tenor: {
+              type: Type.NUMBER,
+              description:
+                "Jumlah bulan tenor pinjaman / cicilan (contoh: 3, 6, 12).",
+            },
+            monthlyTotal: {
+              type: Type.NUMBER,
+              description:
+                "Nominal cicilan atau angsuran per bulan (pokok + bunga).",
             },
             toAccountName: {
               type: Type.STRING,
               description:
-                "Nama akun tujuan khusus jika transaksi bertipe TRANSFER atau PAY_BILL_PAYLATER.",
+                "Nama akun tujuan khusus jika transaksi bertipe TRANSFER, PAY_BILL_PAYLATER, atau pencairan CREATE_LOAN.",
             },
             paylaterProvider: {
               type: Type.STRING,
@@ -443,6 +539,7 @@ Aturan Ekstraksi Nominal (amount):
       "SET_PAYLATER_LIMIT",
       "PAY_BILL_PAYLATER",
       "CREATE_BILL",
+      "CREATE_LOAN",
     ];
     const normalizedAction = validActions.includes(parsed.action?.toUpperCase())
       ? (parsed.action.toUpperCase() as TransactionAction)
@@ -465,18 +562,50 @@ Aturan Ekstraksi Nominal (amount):
         ? Math.round(parsed.dueDay)
         : null;
 
+    const parsedAmount =
+      typeof parsed.amount === "number" ? Math.max(0, parsed.amount) : 0;
+
+    const parsedTenor =
+      typeof parsed.tenor === "number" && parsed.tenor >= 1
+        ? Math.round(parsed.tenor)
+        : null;
+
+    const parsedMonthlyTotal =
+      typeof parsed.monthlyTotal === "number" && parsed.monthlyTotal > 0
+        ? Math.round(parsed.monthlyTotal)
+        : parsedTenor && parsedAmount > 0
+        ? Math.round(parsedAmount / parsedTenor)
+        : null;
+
+    const parsedMonthlyPrincipal =
+      parsedTenor && parsedAmount > 0
+        ? Math.round(parsedAmount / parsedTenor)
+        : null;
+
+    const parsedMonthlyInterest =
+      parsedMonthlyTotal && parsedMonthlyPrincipal
+        ? Math.max(0, parsedMonthlyTotal - parsedMonthlyPrincipal)
+        : null;
+
     return {
       isTransaction: Boolean(parsed.isTransaction),
       action: normalizedAction,
       type: parsed.isTransaction ? normalizedType : null,
-      amount: typeof parsed.amount === "number" ? Math.max(0, parsed.amount) : 0,
+      amount: parsedAmount,
       accountName: cleanNullable(parsed.accountName) || accounts[0]?.name || "Kas Tunai",
       categoryName: cleanNullable(parsed.categoryName) || categories[0]?.name || "Lain-lain",
       description: cleanNullable(parsed.description) || message,
       toAccountName: cleanNullable(parsed.toAccountName),
       paylaterProvider: cleanNullable(parsed.paylaterProvider),
       dueDay: parsedDueDay,
-      isRecurring: normalizedAction === "CREATE_BILL" || Boolean(parsedDueDay),
+      tenor: parsedTenor,
+      monthlyTotal: parsedMonthlyTotal,
+      monthlyPrincipal: parsedMonthlyPrincipal,
+      monthlyInterest: parsedMonthlyInterest,
+      isRecurring:
+        normalizedAction === "CREATE_BILL" ||
+        normalizedAction === "CREATE_LOAN" ||
+        Boolean(parsedDueDay),
       replyMessage: cleanNullable(parsed.replyMessage),
     };
   } catch (error) {

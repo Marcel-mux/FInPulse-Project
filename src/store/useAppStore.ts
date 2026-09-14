@@ -45,6 +45,9 @@ interface AppState {
   isPaylaterModalOpen: boolean;
   editingPaylaterAccount: Account | null;
 
+  // Loan / Installment modal
+  isLoanModalOpen: boolean;
+
   // Actions
   setTransactionModalOpen: (open: boolean, defaultType?: TransactionType) => void;
   setActiveTransactionType: (type: TransactionType) => void;
@@ -72,6 +75,9 @@ interface AppState {
 
   openPaylaterModal: (account?: Account | null) => void;
   closePaylaterModal: () => void;
+
+  openLoanModal: () => void;
+  closeLoanModal: () => void;
 
   setExportModalOpen: (open: boolean) => void;
   setWhatsAppModalOpen: (open: boolean) => void;
@@ -104,6 +110,8 @@ export const useAppStore = create<AppState>((set) => ({
 
   isPaylaterModalOpen: false,
   editingPaylaterAccount: null,
+
+  isLoanModalOpen: false,
 
   isExportModalOpen: false,
   isWhatsAppModalOpen: false,
@@ -152,6 +160,9 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isPaylaterModalOpen: true, editingPaylaterAccount: account }),
   closePaylaterModal: () =>
     set({ isPaylaterModalOpen: false, editingPaylaterAccount: null }),
+
+  openLoanModal: () => set({ isLoanModalOpen: true }),
+  closeLoanModal: () => set({ isLoanModalOpen: false }),
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
   setWhatsAppModalOpen: (open) => set({ isWhatsAppModalOpen: open }),

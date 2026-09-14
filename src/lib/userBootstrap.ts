@@ -14,6 +14,7 @@ export const DEFAULT_EXPENSE_CATEGORIES = [
   { name: "Hiburan", type: "expense", icon: "Film", colorHex: "#EC4899" },
   { name: "Belanja", type: "expense", icon: "ShoppingBag", colorHex: "#8B5CF6" },
   { name: "Tagihan & Utilitas", type: "expense", icon: "Receipt", colorHex: "#EF4444" },
+  { name: "Bunga / Biaya Pinjaman", type: "expense", icon: "Percent", colorHex: "#EF4444" },
   { name: "Kesehatan", type: "expense", icon: "HeartPulse", colorHex: "#14B8A6" },
   { name: "Pendidikan", type: "expense", icon: "GraduationCap", colorHex: "#6366F1" },
 ];

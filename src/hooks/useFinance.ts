@@ -5,6 +5,7 @@ import {
   BillsResponse,
   BudgetsResponse,
   Category,
+  LoansResponse,
   TransactionWithRelations,
 } from "@/types";
 
@@ -124,6 +125,19 @@ export function useBills() {
       const res = await fetch("/api/bills");
       if (!res.ok) {
         throw new Error("Gagal memuat data tagihan & autodebet");
+      }
+      return res.json();
+    },
+  });
+}
+
+export function useLoans() {
+  return useQuery<LoansResponse>({
+    queryKey: ["loans"],
+    queryFn: async () => {
+      const res = await fetch("/api/loans");
+      if (!res.ok) {
+        throw new Error("Gagal memuat data pinjaman & cicilan");
       }
       return res.json();
     },
@@ -524,6 +538,85 @@ export function usePayBill() {
     },
   });
 }
+
+// ========================
+// MUTATIONS - LOANS & INSTALLMENTS
+// ========================
+
+export function useCreateLoan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      name: string;
+      totalAmount: number;
+      tenor: number;
+      dueDay: number;
+      paylaterAccountId: string;
+      sourceAccountId: string;
+      monthlyTotal?: number;
+    }) => {
+      const res = await fetch("/api/loans", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal membuat pinjaman / cicilan");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    },
+  });
+}
+
+export function usePayLoan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/loans/${id}/pay`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal membayar cicilan pinjaman");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    },
+  });
+}
+
+export function useDeleteLoan() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/loans/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal menghapus pinjaman");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+    },
+  });
+}
+
 
 
 

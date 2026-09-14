@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendWhatsAppMessage } from "@/lib/fonnte";
 import { formatCurrency } from "@/lib/formatters";
+import { payLoanInstallment } from "@/lib/loanService";
 
 export const dynamic = "force-dynamic";
 
@@ -298,13 +299,119 @@ async function handleCron(request: NextRequest) {
       }
     }
 
-    console.log("[CRON BILLS] Hasil eksekusi cron:", JSON.stringify(results));
+    // 5. Ambil semua cicilan pinjaman yang jatuh tempo hari ini dan masih aktif
+    const candidateLoans = await prisma.loan.findMany({
+      where: {
+        dueDay: todayDay,
+        status: "ACTIVE",
+        remainingMonths: { gt: 0 },
+      },
+      include: {
+        paylaterAccount: true,
+        sourceAccount: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+            whatsappNumber: true,
+          },
+        },
+      },
+    });
+
+    console.log(
+      `[CRON LOANS] Ditemukan ${candidateLoans.length} pinjaman aktif dengan dueDay = ${todayDay}`
+    );
+
+    const loanResults = {
+      totalFound: candidateLoans.length,
+      paid: 0,
+      skippedAlreadyPaid: 0,
+      errors: [] as { loanId: string; name: string; error: string }[],
+    };
+
+    for (const loan of candidateLoans) {
+      try {
+        // Cek apakah cicilan bulan ini sudah dibayar
+        if (loan.lastPaid) {
+          const lastP = new Date(loan.lastPaid);
+          const lastPWib = new Date(lastP.getTime() + 7 * 3600 * 1000);
+          if (
+            lastPWib.getUTCMonth() === currentMonth &&
+            lastPWib.getUTCFullYear() === currentYear
+          ) {
+            console.log(
+              `[CRON LOANS] Pinjaman "${loan.name}" (${loan.id}) sudah dibayar bulan ini. Dilewati.`
+            );
+            loanResults.skippedAlreadyPaid++;
+            continue;
+          }
+        }
+
+        // Cek apakah saldo rekening pembayar mencukupi
+        if (
+          loan.sourceAccount.type !== "credit" &&
+          loan.sourceAccount.balance < loan.monthlyTotal
+        ) {
+          console.warn(
+            `[CRON LOANS] Saldo ${loan.sourceAccount.name} tidak cukup untuk bayar cicilan "${loan.name}".`
+          );
+          loanResults.errors.push({
+            loanId: loan.id,
+            name: loan.name,
+            error: `Saldo ${loan.sourceAccount.name} tidak mencukupi (${formatCurrency(loan.sourceAccount.balance)})`,
+          });
+
+          if (loan.user?.whatsappNumber) {
+            const waWarning =
+              `⚠️ *Gagal Autodebet Cicilan: ${loan.name}*\n\n` +
+              `Pembayaran cicilan bulan ini tidak dapat diproses karena saldo rekening *${loan.sourceAccount.name}* tidak mencukupi.\n\n` +
+              `• *Pinjaman*: ${loan.name}\n` +
+              `• *Nominal Cicilan*: ${formatCurrency(loan.monthlyTotal)}\n` +
+              `• *Rekening Pembayar*: ${loan.sourceAccount.name}\n` +
+              `• *Saldo Tersedia*: ${formatCurrency(loan.sourceAccount.balance)}\n` +
+              `• *Kekurangan*: ${formatCurrency(loan.monthlyTotal - loan.sourceAccount.balance)}\n` +
+              `• *Jatuh Tempo*: Hari ini (${todayFormatted})\n\n` +
+              `Silakan isi saldo rekening Anda atau lakukan pembayaran manual di FinPulse:\n` +
+              `👉 https://f-in-pulse-project.vercel.app/`;
+
+            await sendWhatsAppMessage({
+              target: loan.user.whatsappNumber,
+              message: waWarning,
+            }).catch((err) => {
+              console.error(
+                `[CRON LOANS] Gagal kirim WA peringatan ke ${loan.user.whatsappNumber}:`,
+                err
+              );
+            });
+          }
+
+          continue;
+        }
+
+        // Eksekusi pembayaran cicilan via payLoanInstallment
+        await payLoanInstallment(loan.id, { sendWaNotification: true });
+        loanResults.paid++;
+      } catch (err: unknown) {
+        const errorMsg = err instanceof Error ? err.message : "Gagal memproses cicilan";
+        console.error(`[CRON LOANS] Error saat memproses cicilan "${loan.name}":`, errorMsg);
+        loanResults.errors.push({
+          loanId: loan.id,
+          name: loan.name,
+          error: errorMsg,
+        });
+      }
+    }
+
+    console.log("[CRON BILLS] Hasil eksekusi cron bills:", JSON.stringify(results));
+    console.log("[CRON LOANS] Hasil eksekusi cron loans:", JSON.stringify(loanResults));
 
     return NextResponse.json({
       success: true,
       timestamp: new Date().toISOString(),
       wibDate: `${todayDay}/${currentMonth + 1}/${currentYear}`,
-      summary: results,
+      billsSummary: results,
+      loansSummary: loanResults,
     });
   } catch (error) {
     console.error("[CRON BILLS FATAL ERROR]:", error);

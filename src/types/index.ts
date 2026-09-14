@@ -196,3 +196,46 @@ export interface BillsResponse {
   totalPendingAmount: number;
 }
 
+export type LoanStatus = "ACTIVE" | "COMPLETED";
+
+export interface LoanWithRelations {
+  id: string;
+  userId: string;
+  name: string;
+  totalAmount: number;
+  tenor: number;
+  monthlyPrincipal: number;
+  monthlyInterest: number;
+  monthlyTotal: number;
+  dueDay: number;
+  remainingMonths: number;
+  status: LoanStatus;
+  lastPaid: string | null;
+  paylaterAccountId: string;
+  sourceAccountId: string;
+  createdAt: string;
+  updatedAt: string;
+  paylaterAccount: {
+    id: string;
+    name: string;
+    accountCategory?: AccountCategory;
+    creditLimit?: number | null;
+    balance: number;
+  };
+  sourceAccount: {
+    id: string;
+    name: string;
+    balance: number;
+    type: AccountType;
+  };
+  isPaidThisMonth: boolean;
+}
+
+export interface LoansResponse {
+  loans: LoanWithRelations[];
+  totalActiveDebt: number;
+  totalMonthlyInstallment: number;
+  activeLoansCount: number;
+}
+
+

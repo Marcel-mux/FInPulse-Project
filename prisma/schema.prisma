@@ -25,6 +25,7 @@ model User {
   transactions Transaction[]
   budgets      Budget[]
   bills        Bill[]
+  loans        Loan[]
 
   @@map("users")
 }
@@ -47,6 +48,8 @@ model Account {
   transactionsFrom Transaction[] @relation("AccountTransactionsFrom")
   transactionsTo   Transaction[] @relation("AccountTransactionsTo")
   bills            Bill[]
+  paylaterLoans    Loan[]        @relation("PaylaterLoans")
+  sourceLoans      Loan[]        @relation("SourceLoans")
 
   @@map("accounts")
 }
@@ -125,3 +128,29 @@ model Bill {
 
   @@map("bills")
 }
+
+model Loan {
+  id                String    @id @default(cuid())
+  userId            String    @map("user_id")
+  name              String
+  totalAmount       Float     @map("total_amount")
+  tenor             Int
+  monthlyPrincipal  Float     @map("monthly_principal")
+  monthlyInterest   Float     @map("monthly_interest")
+  monthlyTotal      Float     @map("monthly_total")
+  dueDay            Int       @map("due_day") // tanggal 1 - 31
+  remainingMonths   Int       @map("remaining_months")
+  status            String    @default("ACTIVE") // "ACTIVE" | "COMPLETED"
+  lastPaid          DateTime? @map("last_paid")
+  paylaterAccountId String    @map("paylater_account_id")
+  sourceAccountId   String    @map("source_account_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paylaterAccount Account @relation("PaylaterLoans", fields: [paylaterAccountId], references: [id], onDelete: Cascade)
+  sourceAccount   Account @relation("SourceLoans", fields: [sourceAccountId], references: [id], onDelete: Cascade)
+
+  @@map("loans")
+}
+
