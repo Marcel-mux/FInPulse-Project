@@ -36,9 +36,30 @@ export async function POST(
       );
     }
 
+    const isPaylater = bill.account.accountCategory === "PAYLATER";
+
+    // Validasi kecukupan limit paylater atau saldo kas
+    if (isPaylater) {
+      if (bill.account.balance < bill.amount) {
+        return NextResponse.json(
+          {
+            error: `Sisa limit Paylater ${bill.account.name} tidak mencukupi (${formatCurrency(bill.account.balance)}). Dibutuhkan: ${formatCurrency(bill.amount)}.`,
+          },
+          { status: 400 }
+        );
+      }
+    } else if (bill.account.type !== "credit" && bill.account.balance < bill.amount) {
+      return NextResponse.json(
+        {
+          error: `Saldo ${bill.account.name} tidak mencukupi (${formatCurrency(bill.account.balance)}). Dibutuhkan: ${formatCurrency(bill.amount)}.`,
+        },
+        { status: 400 }
+      );
+    }
+
     // Eksekusi atomik: kurangi saldo, buat transaksi pengeluaran, perbarui lastDeducted
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Kurangi saldo rekening
+      // 1. Kurangi saldo rekening / sisa limit paylater
       const updatedAccount = await tx.account.update({
         where: { id: bill.accountId },
         data: {
@@ -56,7 +77,8 @@ export async function POST(
           amount: bill.amount,
           accountId: bill.accountId,
           categoryId: bill.categoryId,
-          description: `Pembayaran Tagihan: ${bill.name}`,
+          description: `Pembayaran Tagihan: ${bill.name}${isPaylater ? ` (${bill.account.name})` : ""}`,
+          tags: isPaylater ? "#paylater #bill" : "#bill",
           date: new Date(),
           isRecurring: true,
         },
@@ -86,15 +108,25 @@ export async function POST(
         year: "numeric",
       });
 
-      const message =
-        `✅ *Pembayaran Tagihan Berhasil!*\n\n` +
-        `Tagihan *${bill.name}* telah berhasil dibayarkan.\n\n` +
-        `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
-        `• *Rekening*: ${bill.account.name}\n` +
-        `• *Kategori*: ${bill.category.name}\n` +
-        `• *Tanggal*: ${todayFormatted}\n` +
-        `• *Sisa Saldo*: ${formatCurrency(result.updatedAccount.balance)}\n\n` +
-        `_Dikelola otomatis oleh FinPulse Pro._`;
+      const message = isPaylater
+        ? `✅ *Pembayaran Tagihan Paylater Berhasil!*\n\n` +
+          `Tagihan *${bill.name}* telah berhasil dibayarkan menggunakan ${bill.account.name}.\n\n` +
+          `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
+          `• *Provider*: ${bill.account.name} (Paylater)\n` +
+          `• *Kategori*: ${bill.category.name}\n` +
+          `• *Tanggal*: ${todayFormatted}\n` +
+          `• *Sisa Limit ${bill.account.name}*: ${formatCurrency(result.updatedAccount.balance)}${
+            bill.account.creditLimit ? ` (Plafon: ${formatCurrency(bill.account.creditLimit)})` : ""
+          }\n\n` +
+          `_Dikelola otomatis oleh FinPulse Pro._`
+        : `✅ *Pembayaran Tagihan Berhasil!*\n\n` +
+          `Tagihan *${bill.name}* telah berhasil dibayarkan.\n\n` +
+          `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
+          `• *Rekening*: ${bill.account.name}\n` +
+          `• *Kategori*: ${bill.category.name}\n` +
+          `• *Tanggal*: ${todayFormatted}\n` +
+          `• *Sisa Saldo*: ${formatCurrency(result.updatedAccount.balance)}\n\n` +
+          `_Dikelola otomatis oleh FinPulse Pro._`;
 
       // Jalankan kirim pesan di latar belakang tanpa memblokir respons HTTP
       sendWhatsAppMessage({

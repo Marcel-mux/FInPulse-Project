@@ -160,10 +160,15 @@ export function BillCard({ bill }: BillCardProps) {
         <div className="text-right">
           <span className="text-[10px] text-gray-400 flex items-center justify-end gap-1">
             <Landmark className="w-3 h-3" />
-            <span>{bill.account.name}</span>
+            <span>
+              {bill.account.name}{" "}
+              {bill.account.accountCategory === "PAYLATER" ? "(Paylater)" : ""}
+            </span>
           </span>
           <div className="text-[10px] font-medium text-gray-500">
-            Saldo: {formatCurrency(bill.account.balance)}
+            {bill.account.accountCategory === "PAYLATER"
+              ? `Sisa Limit: ${formatCurrency(bill.account.balance)}`
+              : `Saldo: ${formatCurrency(bill.account.balance)}`}
           </div>
         </div>
       </div>

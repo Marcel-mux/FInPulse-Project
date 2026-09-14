@@ -169,6 +169,8 @@ export interface BillWithRelations {
     id: string;
     name: string;
     type: AccountType;
+    accountCategory?: AccountCategory;
+    creditLimit?: number | null;
     colorHex: string | null;
     icon: string | null;
     balance: number;

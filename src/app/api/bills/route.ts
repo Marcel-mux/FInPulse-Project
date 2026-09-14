@@ -17,6 +17,8 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             type: true,
+            accountCategory: true,
+            creditLimit: true,
             colorHex: true,
             icon: true,
             balance: true,

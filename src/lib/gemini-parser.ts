@@ -24,7 +24,8 @@ export interface ParseTransactionOptions {
 export type TransactionAction =
   | "TRANSACTION"
   | "SET_PAYLATER_LIMIT"
-  | "PAY_BILL_PAYLATER";
+  | "PAY_BILL_PAYLATER"
+  | "CREATE_BILL";
 
 export interface ParsedTransactionResult {
   isTransaction: boolean;
@@ -36,6 +37,8 @@ export interface ParsedTransactionResult {
   description: string | null;
   toAccountName?: string | null;
   paylaterProvider?: string | null;
+  dueDay?: number | null;
+  isRecurring?: boolean;
   replyMessage?: string | null;
 }
 
@@ -123,9 +126,11 @@ function fallbackRuleBasedParser(
 
   // Daftar provider paylater populer
   const paylaterKeywords = [
+    { key: "shopeepay paylater", name: "ShopeePay" },
+    { key: "shopeepaylater", name: "ShopeePay" },
+    { key: "shopee paylater", name: "ShopeePay" },
+    { key: "shopeepay", name: "ShopeePay" },
     { key: "spaylater", name: "SPayLater" },
-    { key: "shopeepaylater", name: "SPayLater" },
-    { key: "shopee paylater", name: "SPayLater" },
     { key: "gopaylater", name: "GoPay Later" },
     { key: "gopay later", name: "GoPay Later" },
     { key: "kredivo", name: "Kredivo" },
@@ -154,14 +159,13 @@ function fallbackRuleBasedParser(
     };
   }
 
-  // 2. Intent B: PAY_BILL_PAYLATER
+  // 2. Intent B: PAY_BILL_PAYLATER (Pelunasan / Bayar Tagihan Paylater)
   if (
-    lower.includes("bayar tagihan") ||
+    lower.includes("bayar tagihan paylater") ||
     lower.includes("lunasi") ||
     (lower.includes("bayar") && detectedPaylater && (lower.includes("dari") || lower.includes("pakai") || lower.includes("lewat") || lower.includes("via")))
   ) {
     const providerName = detectedPaylater?.name || "SPayLater";
-    // Cari akun non-paylater untuk sumber dana
     const sourceAcc =
       accounts.find(
         (a) =>
@@ -185,7 +189,69 @@ function fallbackRuleBasedParser(
     };
   }
 
-  // 3. Intent C: TRANSACTION
+  // Cari akun yang paling cocok (utamakan Paylater jika terdeteksi)
+  let matchedAcc: UserAccountContext | undefined;
+  if (detectedPaylater) {
+    matchedAcc = accounts.find(
+      (a) =>
+        a.name.toLowerCase().includes(detectedPaylater.key) ||
+        detectedPaylater.key.includes(a.name.toLowerCase()) ||
+        (a.accountCategory === "PAYLATER" &&
+          (a.name.toLowerCase().includes(detectedPaylater.name.toLowerCase()) ||
+            detectedPaylater.name.toLowerCase().includes(a.name.toLowerCase())))
+    );
+    if (!matchedAcc && (detectedPaylater.key.includes("shopee") || detectedPaylater.key.includes("spay"))) {
+      matchedAcc = accounts.find(
+        (a) =>
+          a.accountCategory === "PAYLATER" ||
+          a.name.toLowerCase().includes("shopee") ||
+          a.name.toLowerCase().includes("spay")
+      );
+    }
+  }
+  if (!matchedAcc) {
+    matchedAcc = accounts.find((a) => lower.includes(a.name.toLowerCase())) || accounts[0];
+  }
+
+  // 3. Intent C: CREATE_BILL (Pendaftaran Tagihan Berulang)
+  const isBillRegistration =
+    lower.includes("tiap tanggal") ||
+    lower.includes("setiap tanggal") ||
+    lower.includes("tiap tgl") ||
+    lower.includes("setiap tgl") ||
+    (lower.includes("tagihan") && (lower.includes("tanggal") || lower.includes("tgl")));
+
+  const dueDayMatch = lower.match(/(?:tiap|setiap)?\s*(?:tanggal|tgl)\s*(\d+)/i);
+  const parsedDueDay = dueDayMatch ? parseInt(dueDayMatch[1], 10) : null;
+
+  if (isBillRegistration && parsedDueDay) {
+    const billAccountName = matchedAcc?.name || detectedPaylater?.name || "SPayLater";
+    let billCat = categories.find((c) => lower.includes(c.name.toLowerCase()));
+    if (!billCat) {
+      if (lower.includes("spotify") || lower.includes("netflix") || lower.includes("youtube")) {
+        billCat = categories.find((c) => c.name.toLowerCase().includes("hiburan")) || categories[0];
+      } else {
+        billCat = categories.find((c) => c.name.toLowerCase().includes("tagihan")) || categories[0];
+      }
+    }
+
+    return {
+      isTransaction: true,
+      action: "CREATE_BILL",
+      type: "EXPENSE",
+      amount: parsedAmount,
+      accountName: billAccountName,
+      categoryName: billCat?.name || "Tagihan & Utilitas",
+      description: text,
+      toAccountName: null,
+      paylaterProvider: detectedPaylater?.name || null,
+      dueDay: parsedDueDay,
+      isRecurring: true,
+      replyMessage: null,
+    };
+  }
+
+  // 4. Intent D: TRANSACTION (Transaksi Normal)
   let txType: "EXPENSE" | "INCOME" | "TRANSFER" = "EXPENSE";
   if (lower.includes("transfer") || lower.includes("trf") || lower.includes("kirim") || lower.includes("topup") || lower.includes("top up")) {
     txType = "TRANSFER";
@@ -193,14 +259,6 @@ function fallbackRuleBasedParser(
     txType = "INCOME";
   }
 
-  // Pilih akun terdekat (utamakan paylater jika cocok)
-  let matchedAcc: UserAccountContext | undefined;
-  if (detectedPaylater) {
-    matchedAcc = accounts.find((a) => a.name.toLowerCase().includes(detectedPaylater.key));
-  }
-  if (!matchedAcc) {
-    matchedAcc = accounts.find((a) => lower.includes(a.name.toLowerCase())) || accounts[0];
-  }
   const matchedCat = categories.find((c) => lower.includes(c.name.toLowerCase())) || categories[0];
 
   return {
@@ -208,7 +266,7 @@ function fallbackRuleBasedParser(
     action: "TRANSACTION",
     type: txType,
     amount: parsedAmount,
-    accountName: matchedAcc?.name || "Kas Tunai",
+    accountName: matchedAcc?.name || detectedPaylater?.name || "Kas Tunai",
     categoryName: matchedCat?.name || "Lain-lain",
     description: text,
     toAccountName: txType === "TRANSFER" ? (accounts.find((a) => a.id !== matchedAcc?.id)?.name || null) : null,
@@ -245,7 +303,7 @@ export async function parseWhatsAppTransaction({
     .map((c) => `- ${c.name} (tipe: ${c.type})`)
     .join("\n");
 
-  const systemInstruction = `Anda adalah asisten AI pencatat transaksi keuangan pribadi dan manajemen Paylater untuk FinPulse.
+  const systemInstruction = `Anda adalah asisten AI pencatat transaksi keuangan pribadi, tagihan berulang, dan manajemen Paylater untuk FinPulse.
 Tugas Anda adalah membaca pesan percakapan singkat dalam bahasa Indonesia yang dikirim pengguna melalui WhatsApp, lalu mengekstrak aksi dan data terstruktur.
 
 Daftar Akun/Dompet pengguna saat ini:
@@ -255,7 +313,19 @@ Daftar Kategori pengguna saat ini:
 ${categoryListStr || "(Belum ada kategori terdaftar)"}
 
 Aturan Penentuan Aksi (action):
-1. "SET_PAYLATER_LIMIT":
+1. "CREATE_BILL":
+   - Jika pengguna mendaftarkan atau mencatat jadwal tagihan rutin bulanan / autodebet.
+   - Contoh: "Tagihan Spotify 55rb tiap tanggal 10 potong ShopeePay Paylater", "Langganan Netflix 186rb autodebet GoPay Later", "Tagihan WiFi 350k tiap tgl 20 potong BCA".
+   - Set action = "CREATE_BILL".
+   - Set accountName = Nama akun/provider pemotong yang disebutkan.
+     * PENTING: Jika pengguna menyebutkan Paylater (misal: "ShopeePay Paylater", "ShopeePay", "SPayLater", "GoPay Later", "Kredivo", "Akulaku"), ARAHKAN 'accountName' ke nama akun Paylater terkait yang cocok pada daftar akun pengguna (contoh: "ShopeePay" atau "SPayLater"). JANGAN PERNAH mengarahkan ke akun kas tunai jika pengguna sudah menyebutkan nama akun/paylater.
+   - Set dueDay = Tanggal jatuh tempo bulanan berupa angka 1 - 31 (contoh: "tiap tanggal 10" -> 10).
+   - Set amount = Angka nominal tagihan murni (contoh: 55000).
+   - Set description = Keterangan tagihan (contoh: "Tagihan Spotify", "Langganan Netflix").
+   - Set categoryName = Kategori yang sesuai (contoh: "Hiburan" atau "Tagihan & Utilitas").
+   - Set isTransaction = true.
+
+2. "SET_PAYLATER_LIMIT":
    - Jika pengguna ingin menyetel, mendaftarkan, menambah, atau memperbarui limit kredit / paylater (SPayLater, GoPay Later, Kredivo, Akulaku, dll).
    - Contoh: "Set limit SPayLater 5jt", "Tambah paylater GopayLater limit 3 juta", "Update limit Kredivo 10jt", "Plafon Akulaku 4 juta".
    - Set action = "SET_PAYLATER_LIMIT".
@@ -263,7 +333,7 @@ Aturan Penentuan Aksi (action):
    - Set amount = Angka total plafon limit (contoh: 5000000).
    - Set isTransaction = true.
 
-2. "PAY_BILL_PAYLATER":
+3. "PAY_BILL_PAYLATER":
    - Jika pengguna membayar / melunasi tagihan paylater menggunakan saldo rekening lain.
    - Contoh: "Bayar tagihan SPayLater 300rb dari BCA", "Lunasi GoPay Later 500rb pakai Jago", "Bayar tagihan Kredivo 200rb via Mandiri".
    - Set action = "PAY_BILL_PAYLATER".
@@ -272,7 +342,7 @@ Aturan Penentuan Aksi (action):
    - Set amount = Angka nominal yang dibayar (contoh: 300000).
    - Set isTransaction = true.
 
-3. "TRANSACTION":
+4. "TRANSACTION":
    - Untuk transaksi biasa (EXPENSE, INCOME, atau TRANSFER), termasuk belanja yang menggunakan akun Paylater.
    - Contoh: "Beli sepatu 300rb pakai SPayLater", "Makan siang 35k pakai Kas", "Gaji freelance 2jt masuk BCA", "Transfer 100rb dari BCA ke ShopeePay".
    - Jika belanja menggunakan paylater, accountName adalah nama provider paylater tersebut (contoh: "SPayLater"), dan type = "EXPENSE".
@@ -300,12 +370,12 @@ Aturan Ekstraksi Nominal (amount):
             isTransaction: {
               type: Type.BOOLEAN,
               description:
-                "True jika pesan merupakan transaksi keuangan atau perintah limit paylater yang valid.",
+                "True jika pesan merupakan transaksi keuangan, pendaftaran tagihan, atau perintah limit paylater yang valid.",
             },
             action: {
               type: Type.STRING,
               description:
-                "Aksi: TRANSACTION, SET_PAYLATER_LIMIT, atau PAY_BILL_PAYLATER.",
+                "Aksi: TRANSACTION, SET_PAYLATER_LIMIT, PAY_BILL_PAYLATER, atau CREATE_BILL.",
             },
             type: {
               type: Type.STRING,
@@ -318,7 +388,7 @@ Aturan Ekstraksi Nominal (amount):
             accountName: {
               type: Type.STRING,
               description:
-                "Nama akun asal / sumber dana yang dicocokkan dengan daftar akun user.",
+                "Nama akun asal / sumber dana / paylater yang dicocokkan dengan daftar akun user.",
             },
             categoryName: {
               type: Type.STRING,
@@ -328,7 +398,12 @@ Aturan Ekstraksi Nominal (amount):
             description: {
               type: Type.STRING,
               description:
-                "Deskripsi singkat dan rapi tentang transaksi ini.",
+                "Deskripsi singkat dan rapi tentang transaksi atau tagihan ini.",
+            },
+            dueDay: {
+              type: Type.NUMBER,
+              description:
+                "Tanggal jatuh tempo bulanan (1-31) jika merupakan pendaftaran tagihan rutin.",
             },
             toAccountName: {
               type: Type.STRING,
@@ -363,7 +438,12 @@ Aturan Ekstraksi Nominal (amount):
 
     const parsed = JSON.parse(responseText);
 
-    const validActions = ["TRANSACTION", "SET_PAYLATER_LIMIT", "PAY_BILL_PAYLATER"];
+    const validActions = [
+      "TRANSACTION",
+      "SET_PAYLATER_LIMIT",
+      "PAY_BILL_PAYLATER",
+      "CREATE_BILL",
+    ];
     const normalizedAction = validActions.includes(parsed.action?.toUpperCase())
       ? (parsed.action.toUpperCase() as TransactionAction)
       : "TRANSACTION";
@@ -371,7 +451,7 @@ Aturan Ekstraksi Nominal (amount):
     const validTypes = ["EXPENSE", "INCOME", "TRANSFER"];
     const normalizedType = validTypes.includes(parsed.type?.toUpperCase())
       ? (parsed.type.toUpperCase() as "EXPENSE" | "INCOME" | "TRANSFER")
-      : normalizedAction === "PAY_BILL_PAYLATER" ? "EXPENSE" : "EXPENSE";
+      : "EXPENSE";
 
     const cleanNullable = (val?: string | null) => {
       if (!val) return null;
@@ -379,6 +459,11 @@ Aturan Ekstraksi Nominal (amount):
       if (s === ":null" || s === "null" || s === "undefined" || s === "") return null;
       return s;
     };
+
+    const parsedDueDay =
+      typeof parsed.dueDay === "number" && parsed.dueDay >= 1 && parsed.dueDay <= 31
+        ? Math.round(parsed.dueDay)
+        : null;
 
     return {
       isTransaction: Boolean(parsed.isTransaction),
@@ -390,6 +475,8 @@ Aturan Ekstraksi Nominal (amount):
       description: cleanNullable(parsed.description) || message,
       toAccountName: cleanNullable(parsed.toAccountName),
       paylaterProvider: cleanNullable(parsed.paylaterProvider),
+      dueDay: parsedDueDay,
+      isRecurring: normalizedAction === "CREATE_BILL" || Boolean(parsedDueDay),
       replyMessage: cleanNullable(parsed.replyMessage),
     };
   } catch (error) {

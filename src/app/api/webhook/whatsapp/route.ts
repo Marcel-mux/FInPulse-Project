@@ -275,6 +275,23 @@ export async function POST(request: NextRequest) {
       const clean = providerName.toLowerCase().trim();
       const exact = paylaters.find((a) => a.name.toLowerCase() === clean);
       if (exact) return exact;
+
+      // Aliases untuk ShopeePay / SPayLater
+      if (clean.includes("shopee") || clean.includes("spay")) {
+        const shopeeAcc = paylaters.find(
+          (a) =>
+            a.name.toLowerCase().includes("shopee") ||
+            a.name.toLowerCase().includes("spay")
+        );
+        if (shopeeAcc) return shopeeAcc;
+      }
+
+      // Aliases untuk GoPay / GoPay Later
+      if (clean.includes("gopay")) {
+        const gopayAcc = paylaters.find((a) => a.name.toLowerCase().includes("gopay"));
+        if (gopayAcc) return gopayAcc;
+      }
+
       const sub = paylaters.find(
         (a) =>
           a.name.toLowerCase().includes(clean) || clean.includes(a.name.toLowerCase())
@@ -297,7 +314,22 @@ export async function POST(request: NextRequest) {
       const exact = candidates.find((a) => a.name.toLowerCase() === cleanTarget);
       if (exact) return exact;
 
-      // 2. Substring match
+      // 2. Paylater specific aliases (ShopeePay / SPayLater / GoPay)
+      if (cleanTarget.includes("shopee") || cleanTarget.includes("spay")) {
+        const shopeeAcc = candidates.find(
+          (a) =>
+            a.name.toLowerCase().includes("shopee") ||
+            a.name.toLowerCase().includes("spay")
+        );
+        if (shopeeAcc) return shopeeAcc;
+      }
+
+      if (cleanTarget.includes("gopay")) {
+        const gopayAcc = candidates.find((a) => a.name.toLowerCase().includes("gopay"));
+        if (gopayAcc) return gopayAcc;
+      }
+
+      // 3. Substring match
       const sub = candidates.find(
         (a) =>
           a.name.toLowerCase().includes(cleanTarget) ||
@@ -305,7 +337,7 @@ export async function POST(request: NextRequest) {
       );
       if (sub) return sub;
 
-      // 3. Fallback type-based (jika disebut "cash" atau "tunai")
+      // 4. Fallback type-based (jika disebut "cash" atau "tunai")
       if (cleanTarget.includes("cash") || cleanTarget.includes("tunai")) {
         const cashAcc = candidates.find((a) => a.type === "cash");
         if (cashAcc) return cashAcc;
@@ -338,6 +370,52 @@ export async function POST(request: NextRequest) {
 
     // 5. Eksekusi Database Menggunakan Prisma $transaction
     const executionResult = await prisma.$transaction(async (tx) => {
+      // Skenario 0: CREATE_BILL (Pendaftaran Tagihan Bulanan / Autodebet)
+      if (parsed.action === "CREATE_BILL") {
+        const sourceAccount =
+          matchPaylaterAccount(parsed.accountName) ||
+          matchAccount(parsed.accountName);
+
+        if (!sourceAccount) {
+          throw new Error("Rekening pemotong tagihan tidak ditemukan.");
+        }
+
+        const category = matchCategory(parsed.categoryName, "expense");
+        const isPaylater = sourceAccount.accountCategory === "PAYLATER";
+        const dueDay =
+          parsed.dueDay && parsed.dueDay >= 1 && parsed.dueDay <= 31
+            ? parsed.dueDay
+            : 10;
+        const billTitle =
+          parsed.description
+            ?.replace(/^tagihan\s+/i, "")
+            ?.replace(/\s+tiap\s+tanggal\s+\d+/i, "")
+            ?.trim() || "Tagihan Bulanan";
+
+        const newBill = await tx.bill.create({
+          data: {
+            userId: user!.id,
+            name: billTitle,
+            amount,
+            dueDay,
+            autoDeduct: true,
+            accountId: sourceAccount.id,
+            categoryId: category?.id || user!.categories[0]?.id || "",
+          },
+        });
+
+        const reply =
+          `📅 *Tagihan Bulanan Berhasil Didaftarkan!*\n\n` +
+          `• *Tagihan*: ${newBill.name}\n` +
+          `• *Nominal*: ${formatRupiah(amount)}\n` +
+          `• *Jatuh Tempo*: Setiap tanggal ${newBill.dueDay}\n` +
+          `• *Rekening Pemotong*: ${sourceAccount.name}${isPaylater ? " (Paylater)" : ""}\n` +
+          `• *Kategori*: ${category?.name || "Tagihan & Utilitas"}\n` +
+          `• *Autodebet*: Aktif (Otomatis dipotong oleh FinPulse)\n\n` +
+          `_Tagihan ini akan otomatis diproses pada tanggal jatuh tempo setiap bulan._`;
+
+        return { reply, bill: newBill };
+      }
       // Skenario 1: SET_PAYLATER_LIMIT
       if (parsed.action === "SET_PAYLATER_LIMIT") {
         const provider = parsed.paylaterProvider || parsed.accountName || "SPayLater";

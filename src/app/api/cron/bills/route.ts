@@ -95,11 +95,94 @@ async function handleCron(request: NextRequest) {
         // Skenario A: AUTODEBET AKTIF (autoDeduct == true)
         if (bill.autoDeduct) {
           console.log(
-            `[CRON BILLS] Menjalankan Autodebet untuk "${bill.name}" sejumlah ${bill.amount}`
+            `[CRON BILLS] Menjalankan Autodebet untuk "${bill.name}" sejumlah ${bill.amount} dari ${bill.account.name}`
           );
 
+          const isPaylater = bill.account.accountCategory === "PAYLATER";
+
+          // 1. Validasi kecukupan limit paylater atau saldo kas
+          if (isPaylater) {
+            if (bill.account.balance < bill.amount) {
+              console.warn(
+                `[CRON BILLS] Gagal autodebet "${bill.name}": Limit Paylater ${bill.account.name} tidak mencukupi. Status OVERDUE.`
+              );
+
+              results.errors.push({
+                billId: bill.id,
+                name: bill.name,
+                error: `Sisa limit Paylater ${bill.account.name} tidak mencukupi (${formatCurrency(bill.account.balance)})`,
+              });
+
+              // Kirim notifikasi WA peringatan limit tidak mencukupi
+              if (bill.user?.whatsappNumber) {
+                const waMessage =
+                  `⚠️ *Autodebet Paylater Gagal: ${bill.name}*\n\n` +
+                  `Autodebet tagihan bulanan Anda tidak dapat diproses karena sisa limit *${bill.account.name}* tidak mencukupi.\n\n` +
+                  `• *Tagihan*: ${bill.name}\n` +
+                  `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
+                  `• *Metode*: ${bill.account.name} (Paylater)\n` +
+                  `• *Sisa Limit*: ${formatCurrency(bill.account.balance)}\n` +
+                  `• *Kekurangan Limit*: ${formatCurrency(bill.amount - bill.account.balance)}\n` +
+                  `• *Jatuh Tempo*: ${todayFormatted}\n\n` +
+                  `_Status: Tagihan Tertunggak (OVERDUE)._\n` +
+                  `Silakan lunasi limit paylater Anda atau bayar manual melalui dashboard FinPulse:\n` +
+                  `👉 https://f-in-pulse-project.vercel.app/`;
+
+                await sendWhatsAppMessage({
+                  target: bill.user.whatsappNumber,
+                  message: waMessage,
+                }).catch((err) => {
+                  console.error(
+                    `[CRON BILLS] Gagal kirim WA peringatan paylater ke ${bill.user.whatsappNumber}:`,
+                    err
+                  );
+                });
+              }
+
+              // Lewati autodebet agar status tetap OVERDUE
+              continue;
+            }
+          } else if (bill.account.type !== "credit" && bill.account.balance < bill.amount) {
+            console.warn(
+              `[CRON BILLS] Gagal autodebet "${bill.name}": Saldo ${bill.account.name} tidak mencukupi. Status OVERDUE.`
+            );
+
+            results.errors.push({
+              billId: bill.id,
+              name: bill.name,
+              error: `Saldo ${bill.account.name} tidak mencukupi (${formatCurrency(bill.account.balance)})`,
+            });
+
+            if (bill.user?.whatsappNumber) {
+              const waMessage =
+                `⚠️ *Autodebet Gagal: ${bill.name}*\n\n` +
+                `Autodebet tagihan bulanan Anda tidak dapat diproses karena saldo rekening *${bill.account.name}* tidak mencukupi.\n\n` +
+                `• *Tagihan*: ${bill.name}\n` +
+                `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
+                `• *Rekening*: ${bill.account.name}\n` +
+                `• *Saldo Tersedia*: ${formatCurrency(bill.account.balance)}\n` +
+                `• *Jatuh Tempo*: ${todayFormatted}\n\n` +
+                `_Status: Tagihan Tertunggak (OVERDUE)._\n` +
+                `Silakan isi saldo rekening Anda atau bayar manual di dashboard FinPulse:\n` +
+                `👉 https://f-in-pulse-project.vercel.app/`;
+
+              await sendWhatsAppMessage({
+                target: bill.user.whatsappNumber,
+                message: waMessage,
+              }).catch((err) => {
+                console.error(
+                  `[CRON BILLS] Gagal kirim WA peringatan ke ${bill.user.whatsappNumber}:`,
+                  err
+                );
+              });
+            }
+
+            continue;
+          }
+
+          // 2. Eksekusi pemotongan saldo / limit
           const { updatedAccount } = await prisma.$transaction(async (tx) => {
-            // a. Kurangi saldo rekening
+            // a. Kurangi saldo rekening / sisa limit paylater
             const acc = await tx.account.update({
               where: { id: bill.accountId },
               data: {
@@ -117,8 +200,11 @@ async function handleCron(request: NextRequest) {
                 amount: bill.amount,
                 accountId: bill.accountId,
                 categoryId: bill.categoryId,
-                description: `Autodebet Tagihan: ${bill.name}`,
+                description: `Autodebet Tagihan: ${bill.name}${isPaylater ? ` (${bill.account.name})` : ""}`,
                 date: new Date(),
+                tags: isPaylater
+                  ? "#whatsapp #paylater #bill #autodebet"
+                  : "#whatsapp #bill #autodebet",
                 isRecurring: true,
               },
             });
@@ -138,15 +224,25 @@ async function handleCron(request: NextRequest) {
 
           // d. Kirim WhatsApp notifikasi sukses autodebet
           if (bill.user?.whatsappNumber) {
-            const waMessage =
-              `🔔 *Autodebet Berhasil: ${bill.name}*\n\n` +
-              `Tagihan bulanan Anda telah dipotong secara otomatis oleh FinPulse.\n\n` +
-              `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
-              `• *Rekening*: ${bill.account.name}\n` +
-              `• *Kategori*: ${bill.category.name}\n` +
-              `• *Tanggal*: ${todayFormatted}\n` +
-              `• *Sisa Saldo*: ${formatCurrency(updatedAccount.balance)}\n\n` +
-              `_Status: Lunas untuk periode ini._`;
+            const waMessage = isPaylater
+              ? `🔔 *Autodebet Paylater Berhasil: ${bill.name}*\n\n` +
+                `Tagihan bulanan Anda telah berhasil dipotong otomatis dari limit ${bill.account.name}.\n\n` +
+                `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
+                `• *Provider*: ${bill.account.name} (Paylater)\n` +
+                `• *Kategori*: ${bill.category.name}\n` +
+                `• *Tanggal*: ${todayFormatted}\n` +
+                `• *Sisa Limit ${bill.account.name}*: ${formatCurrency(updatedAccount.balance)}${
+                  bill.account.creditLimit ? ` (dari Plafon ${formatCurrency(bill.account.creditLimit)})` : ""
+                }\n\n` +
+                `_Status: Lunas untuk periode ini._`
+              : `🔔 *Autodebet Berhasil: ${bill.name}*\n\n` +
+                `Tagihan bulanan Anda telah dipotong secara otomatis oleh FinPulse.\n\n` +
+                `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
+                `• *Rekening*: ${bill.account.name}\n` +
+                `• *Kategori*: ${bill.category.name}\n` +
+                `• *Tanggal*: ${todayFormatted}\n` +
+                `• *Sisa Saldo*: ${formatCurrency(updatedAccount.balance)}\n\n` +
+                `_Status: Lunas untuk periode ini._`;
 
             await sendWhatsAppMessage({
               target: bill.user.whatsappNumber,

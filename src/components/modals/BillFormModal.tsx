@@ -19,6 +19,7 @@ import {
   useUpdateBill,
 } from "@/hooks/useFinance";
 import { formatCurrency } from "@/lib/formatters";
+import { Account } from "@/types";
 
 const QUICK_AMOUNTS = [
   { label: "+100rb", val: 100_000 },
@@ -33,7 +34,18 @@ export function BillFormModal() {
   const { data: accountsData } = useAccounts();
   const { data: categoriesData } = useCategories("expense");
 
-  const accounts = useMemo(() => accountsData?.accounts || [], [accountsData]);
+  const accounts: Account[] = useMemo(
+    () => accountsData?.allAccounts || accountsData?.accounts || [],
+    [accountsData]
+  );
+  const regularAccounts = useMemo(
+    () => accounts.filter((a) => a.accountCategory !== "PAYLATER"),
+    [accounts]
+  );
+  const paylaterAccounts = useMemo(
+    () => accounts.filter((a) => a.accountCategory === "PAYLATER"),
+    [accounts]
+  );
   const categories = useMemo(
     () => categoriesData?.categories || [],
     [categoriesData]
@@ -267,13 +279,57 @@ export function BillFormModal() {
                 required
                 className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-charcoal-900 border border-white/10 text-xs text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
               >
-                {accounts.map((acc) => (
-                  <option key={acc.id} value={acc.id} className="bg-charcoal-950">
-                    {acc.name} ({formatCurrency(acc.balance)})
-                  </option>
-                ))}
+                {regularAccounts.length > 0 && (
+                  <optgroup label="Rekening & Dompet Reguler" className="bg-charcoal-950 font-bold text-gray-400">
+                    {regularAccounts.map((acc) => {
+                      const typeLabel =
+                        acc.type === "bank"
+                          ? "Rekening Bank"
+                          : acc.type === "cash"
+                          ? "Kas Tunai"
+                          : acc.type === "ewallet"
+                          ? "E-Wallet"
+                          : acc.type === "investment"
+                          ? "Investasi"
+                          : "Kredit";
+                      return (
+                        <option key={acc.id} value={acc.id} className="bg-charcoal-950 text-white font-normal">
+                          {acc.name} ({typeLabel}) - Saldo: {formatCurrency(acc.balance)}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                )}
+                {paylaterAccounts.length > 0 && (
+                  <optgroup label="Fasilitas Paylater & Limit Kredit" className="bg-charcoal-950 font-bold text-orange-400">
+                    {paylaterAccounts.map((acc) => (
+                      <option key={acc.id} value={acc.id} className="bg-charcoal-950 text-orange-300 font-normal">
+                        {acc.name} (Paylater) - Sisa Limit: {formatCurrency(acc.balance)}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
               </select>
             </div>
+            {(() => {
+              const selected = accounts.find((a) => a.id === accountId);
+              if (selected?.accountCategory === "PAYLATER") {
+                return (
+                  <span className="text-[10px] text-orange-400 mt-1 flex items-center gap-1 font-medium">
+                    <Zap className="w-3 h-3 text-orange-400 shrink-0" />
+                    <span>Diproses via Paylater (Sisa Limit: {formatCurrency(selected.balance)})</span>
+                  </span>
+                );
+              }
+              if (selected) {
+                return (
+                  <span className="text-[10px] text-gray-400 mt-1 block">
+                    Saldo tersedia: {formatCurrency(selected.balance)}
+                  </span>
+                );
+              }
+              return null;
+            })()}
           </div>
 
           {/* Kategori */}
