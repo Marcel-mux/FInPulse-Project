@@ -18,17 +18,29 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const totalNetWorth = accounts.reduce((acc, account) => {
+    const regularAccounts = accounts.filter((a) => a.accountCategory !== "PAYLATER");
+    const paylaterAccounts = accounts.filter((a) => a.accountCategory === "PAYLATER");
+
+    const totalNetWorth = regularAccounts.reduce((acc, account) => {
       if (account.type === "credit") {
         return acc - account.balance;
       }
       return acc + account.balance;
     }, 0);
 
+    const totalPaylaterLimit = paylaterAccounts.reduce((acc, a) => acc + (a.creditLimit || 0), 0);
+    const totalPaylaterAvailable = paylaterAccounts.reduce((acc, a) => acc + a.balance, 0);
+    const totalPaylaterUsed = Math.max(0, totalPaylaterLimit - totalPaylaterAvailable);
+
     return NextResponse.json({
-      accounts,
+      accounts: regularAccounts,
+      paylaterAccounts,
+      allAccounts: accounts,
       totalNetWorth,
-      activeAccountsCount: accounts.length,
+      activeAccountsCount: regularAccounts.length,
+      totalPaylaterLimit,
+      totalPaylaterUsed,
+      totalPaylaterAvailable,
     });
   } catch (error) {
     console.error("Error fetching accounts:", error);
@@ -42,7 +54,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { name, type, balance, colorHex, icon } = body;
+    const { name, type, balance, colorHex, icon, accountCategory, creditLimit } = body;
 
     if (!name || typeof name !== "string" || name.trim() === "") {
       return NextResponse.json(
@@ -51,8 +63,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    const initialCategory = accountCategory === "PAYLATER" ? "PAYLATER" : "REGULAR";
+    const resolvedType = initialCategory === "PAYLATER" ? (type || "credit") : type;
+
     const validTypes = ["cash", "bank", "ewallet", "investment", "credit"];
-    if (!type || !validTypes.includes(type)) {
+    if (!resolvedType || !validTypes.includes(resolvedType)) {
       return NextResponse.json(
         { error: "Tipe akun tidak valid" },
         { status: 400 }
@@ -60,6 +75,13 @@ export async function POST(request: NextRequest) {
     }
 
     const initialBalance = typeof balance === "number" ? balance : parseFloat(balance) || 0;
+    const parsedCreditLimit =
+      creditLimit !== undefined && creditLimit !== null && creditLimit !== ""
+        ? typeof creditLimit === "number"
+          ? creditLimit
+          : parseFloat(creditLimit) || null
+        : null;
+
     const { getAuthUserId } = await import("@/lib/userBootstrap");
     const userId = await getAuthUserId(request, body);
 
@@ -67,7 +89,9 @@ export async function POST(request: NextRequest) {
       data: {
         userId,
         name: name.trim(),
-        type,
+        type: resolvedType,
+        accountCategory: initialCategory,
+        creditLimit: parsedCreditLimit,
         balance: initialBalance,
         colorHex: colorHex || null,
         icon: icon || null,

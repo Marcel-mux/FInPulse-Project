@@ -3,6 +3,7 @@
 import { Header } from "@/components/layout/Header";
 import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
+import { PaylaterSection } from "@/components/paylater/PaylaterSection";
 import { BillSection } from "@/components/bills/BillSection";
 import { BudgetSection } from "@/components/budget/BudgetSection";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
@@ -60,6 +61,11 @@ export default function DashboardPage() {
               onAddAccount={() => openAccountForm(null)}
               onManageAccounts={() => setManageAccountsOpen(true)}
             />
+
+            {/* Section Khusus: Limit Paylater & Fasilitas Kredit */}
+            <div id="paylater-section">
+              <PaylaterSection />
+            </div>
 
             {/* Recent Activity Feed */}
             <RecentActivityFeed

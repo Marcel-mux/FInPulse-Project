@@ -141,6 +141,8 @@ export function useCreateAccount() {
       name: string;
       type: string;
       balance: number;
+      accountCategory?: string;
+      creditLimit?: number | null;
       colorHex?: string;
       icon?: string;
     }) => {
@@ -172,6 +174,8 @@ export function useUpdateAccount() {
       name?: string;
       balance?: number;
       type?: string;
+      accountCategory?: string;
+      creditLimit?: number | null;
       colorHex?: string;
       icon?: string;
       isActive?: boolean;

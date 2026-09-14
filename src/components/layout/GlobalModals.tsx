@@ -10,6 +10,7 @@ import { ManageAccountsModal } from "@/components/modals/ManageAccountsModal";
 import { ManageCategoriesModal } from "@/components/modals/ManageCategoriesModal";
 import { BudgetFormModal } from "@/components/modals/BudgetFormModal";
 import { BillFormModal } from "@/components/modals/BillFormModal";
+import { PaylaterModal } from "@/components/modals/PaylaterModal";
 import { ExportModal } from "@/components/modals/ExportModal";
 import { WhatsAppIntegrationModal } from "@/components/modals/WhatsAppIntegrationModal";
 import { PrintableReport } from "@/components/export/PrintableReport";
@@ -57,6 +58,7 @@ export function GlobalModals() {
       <ManageCategoriesModal />
       <BudgetFormModal />
       <BillFormModal />
+      <PaylaterModal />
       <ExportModal />
       <WhatsAppIntegrationModal />
 

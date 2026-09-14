@@ -7,10 +7,14 @@ export type AccountType =
 
 export type TransactionType = "income" | "expense" | "transfer";
 
+export type AccountCategory = "REGULAR" | "PAYLATER";
+
 export interface Account {
   id: string;
   name: string;
   type: AccountType;
+  accountCategory?: AccountCategory;
+  creditLimit?: number | null;
   balance: number;
   currency: string;
   colorHex: string | null;
@@ -66,8 +70,13 @@ export interface TransactionWithRelations {
 
 export interface AccountsResponse {
   accounts: Account[];
+  paylaterAccounts?: Account[];
+  allAccounts?: Account[];
   totalNetWorth: number;
   activeAccountsCount: number;
+  totalPaylaterLimit?: number;
+  totalPaylaterUsed?: number;
+  totalPaylaterAvailable?: number;
 }
 
 export interface BudgetWithCategory {

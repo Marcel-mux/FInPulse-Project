@@ -15,7 +15,7 @@ import {
   useCreateTransaction,
 } from "@/hooks/useFinance";
 import { formatCurrency } from "@/lib/formatters";
-import { TransactionType } from "@/types";
+import { Account, TransactionType } from "@/types";
 
 const QUICK_AMOUNTS = [
   { label: "+10rb", val: 10_000 },
@@ -40,9 +40,9 @@ export function TransactionModal() {
   } = useAppStore();
 
   const { data: accountsData } = useAccounts();
-  const accounts = useMemo(
-    () => accountsData?.accounts || [],
-    [accountsData?.accounts]
+  const accounts: Account[] = useMemo(
+    () => accountsData?.allAccounts || accountsData?.accounts || [],
+    [accountsData]
   );
 
   const [type, setType] = useState<TransactionType>(activeTransactionType);
@@ -278,13 +278,18 @@ export function TransactionModal() {
             >
               {accounts.map((acc) => (
                 <option key={acc.id} value={acc.id}>
-                  {acc.name} ({formatCurrency(acc.balance)})
+                  {acc.name}{" "}
+                  {acc.accountCategory === "PAYLATER"
+                    ? `[Paylater: Sisa ${formatCurrency(acc.balance)}]`
+                    : `(${formatCurrency(acc.balance)})`}
                 </option>
               ))}
             </select>
             {selectedSourceAccount && (
               <span className="text-[10px] text-gray-400 mt-1 block">
-                Saldo tersedia: {formatCurrency(selectedSourceAccount.balance)}
+                {selectedSourceAccount.accountCategory === "PAYLATER"
+                  ? `Sisa Limit Tersedia: ${formatCurrency(selectedSourceAccount.balance)}`
+                  : `Saldo tersedia: ${formatCurrency(selectedSourceAccount.balance)}`}
               </span>
             )}
           </div>
@@ -308,7 +313,10 @@ export function TransactionModal() {
                   .filter((a) => a.id !== accountId)
                   .map((acc) => (
                     <option key={acc.id} value={acc.id}>
-                      {acc.name} ({formatCurrency(acc.balance)})
+                      {acc.name}{" "}
+                      {acc.accountCategory === "PAYLATER"
+                        ? `[Paylater: Sisa ${formatCurrency(acc.balance)}]`
+                        : `(${formatCurrency(acc.balance)})`}
                     </option>
                   ))}
               </select>

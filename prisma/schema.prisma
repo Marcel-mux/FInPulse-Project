@@ -33,13 +33,15 @@ model Account {
   id        String   @id @default(cuid())
   userId    String   @map("user_id")
   name      String
-  type      String   // 'cash','bank','ewallet','investment','credit'
-  balance   Float    @default(0)
-  currency  String   @default("IDR")
-  colorHex  String?  @map("color_hex")
-  icon      String?
-  isActive  Boolean  @default(true) @map("is_active")
-  createdAt DateTime @default(now()) @map("created_at")
+  type            String   // 'cash','bank','ewallet','investment','credit'
+  accountCategory String   @default("REGULAR") @map("account_category") // "REGULAR" | "PAYLATER"
+  creditLimit     Float?   @map("credit_limit")
+  balance         Float    @default(0)
+  currency        String   @default("IDR")
+  colorHex        String?  @map("color_hex")
+  icon            String?
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at")
 
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactionsFrom Transaction[] @relation("AccountTransactionsFrom")

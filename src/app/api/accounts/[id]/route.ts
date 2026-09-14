@@ -11,7 +11,7 @@ export async function PUT(
   try {
     const { id } = params;
     const body = await request.json();
-    const { name, type, colorHex, icon, isActive, balance } = body;
+    const { name, type, colorHex, icon, isActive, balance, accountCategory, creditLimit } = body;
     const userId = await getAuthUserId(request, body);
 
     const existing = await prisma.account.findFirst({
@@ -34,6 +34,15 @@ export async function PUT(
       }
     }
     if (type !== undefined) updateData.type = type;
+    if (accountCategory !== undefined) updateData.accountCategory = accountCategory;
+    if (creditLimit !== undefined) {
+      updateData.creditLimit =
+        creditLimit === null || creditLimit === ""
+          ? null
+          : typeof creditLimit === "number"
+          ? creditLimit
+          : parseFloat(creditLimit) || null;
+    }
     if (colorHex !== undefined) updateData.colorHex = colorHex;
     if (icon !== undefined) updateData.icon = icon;
     if (isActive !== undefined) updateData.isActive = Boolean(isActive);

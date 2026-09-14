@@ -41,6 +41,10 @@ interface AppState {
   // WhatsApp bot integration modal
   isWhatsAppModalOpen: boolean;
 
+  // Paylater management modal
+  isPaylaterModalOpen: boolean;
+  editingPaylaterAccount: Account | null;
+
   // Actions
   setTransactionModalOpen: (open: boolean, defaultType?: TransactionType) => void;
   setActiveTransactionType: (type: TransactionType) => void;
@@ -65,6 +69,9 @@ interface AppState {
 
   openBillForm: (bill?: BillWithRelations | null) => void;
   closeBillForm: () => void;
+
+  openPaylaterModal: (account?: Account | null) => void;
+  closePaylaterModal: () => void;
 
   setExportModalOpen: (open: boolean) => void;
   setWhatsAppModalOpen: (open: boolean) => void;
@@ -94,6 +101,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   isBillModalOpen: false,
   editingBill: null,
+
+  isPaylaterModalOpen: false,
+  editingPaylaterAccount: null,
 
   isExportModalOpen: false,
   isWhatsAppModalOpen: false,
@@ -137,6 +147,11 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isBillModalOpen: true, editingBill: bill }),
   closeBillForm: () =>
     set({ isBillModalOpen: false, editingBill: null }),
+
+  openPaylaterModal: (account = null) =>
+    set({ isPaylaterModalOpen: true, editingPaylaterAccount: account }),
+  closePaylaterModal: () =>
+    set({ isPaylaterModalOpen: false, editingPaylaterAccount: null }),
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
   setWhatsAppModalOpen: (open) => set({ isWhatsAppModalOpen: open }),

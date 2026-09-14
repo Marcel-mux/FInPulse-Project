@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 3. Analisis Pesan Menggunakan Gemini 3.6 Flash
+    // 3. Analisis Pesan Menggunakan Gemini / AI Parser
     console.log("[DEBUG WEBHOOK CALLING GEMINI PARSER] Input message:", messageText);
     const parsed = await parseWhatsAppTransaction({
       message: messageText,
@@ -226,6 +226,8 @@ export async function POST(request: NextRequest) {
         id: a.id,
         name: a.name,
         type: a.type,
+        accountCategory: a.accountCategory,
+        creditLimit: a.creditLimit,
         balance: a.balance,
       })),
       categories: user.categories.map((c) => ({
@@ -245,8 +247,9 @@ export async function POST(request: NextRequest) {
         "👋 *Halo! Saya Bot AI FinPulse.*\n\n" +
         "Kirimkan pesan pencatatan keuangan Anda, contohnya:\n" +
         "• _Makan siang 25rb pakai Kas_\n" +
-        "• _Bensin motor 35k via BCA_\n" +
-        "• _Gaji freelance 1.5jt ke Jago_\n" +
+        "• _Beli sepatu 300rb pakai SPayLater_\n" +
+        "• _Set limit SPayLater 5jt_\n" +
+        "• _Bayar tagihan SPayLater 300rb dari BCA_\n" +
         "• _Transfer 100rb dari BCA ke ShopeePay_";
 
       console.log("[DEBUG WEBHOOK DISPATCHING NON-TRANSACTION REPLY TO FONNTE]");
@@ -264,6 +267,21 @@ export async function POST(request: NextRequest) {
 
     const txType = parsed.type?.toLowerCase() || "expense";
     const amount = parsed.amount;
+
+    // Helper pencocokan akun paylater
+    const matchPaylaterAccount = (providerName?: string | null) => {
+      const paylaters = user!.accounts.filter((a) => a.accountCategory === "PAYLATER");
+      if (!providerName) return paylaters[0] || null;
+      const clean = providerName.toLowerCase().trim();
+      const exact = paylaters.find((a) => a.name.toLowerCase() === clean);
+      if (exact) return exact;
+      const sub = paylaters.find(
+        (a) =>
+          a.name.toLowerCase().includes(clean) || clean.includes(a.name.toLowerCase())
+      );
+      if (sub) return sub;
+      return null;
+    };
 
     // Helper pencocokan akun terbaik
     const matchAccount = (targetName?: string | null, excludeId?: string) => {
@@ -320,7 +338,144 @@ export async function POST(request: NextRequest) {
 
     // 5. Eksekusi Database Menggunakan Prisma $transaction
     const executionResult = await prisma.$transaction(async (tx) => {
-      // Skenario A: TRANSFER
+      // Skenario 1: SET_PAYLATER_LIMIT
+      if (parsed.action === "SET_PAYLATER_LIMIT") {
+        const provider = parsed.paylaterProvider || parsed.accountName || "SPayLater";
+        const cleanProvider = provider.trim();
+        const existing = matchPaylaterAccount(cleanProvider);
+
+        let targetAccount;
+        if (existing) {
+          const previousLimit = existing.creditLimit || existing.balance || amount;
+          const usedLimit = Math.max(0, previousLimit - existing.balance);
+          const newBalance = Math.max(0, amount - usedLimit);
+
+          targetAccount = await tx.account.update({
+            where: { id: existing.id },
+            data: {
+              creditLimit: amount,
+              balance: newBalance,
+            },
+          });
+        } else {
+          targetAccount = await tx.account.create({
+            data: {
+              userId: user!.id,
+              name: cleanProvider,
+              type: "credit",
+              accountCategory: "PAYLATER",
+              creditLimit: amount,
+              balance: amount,
+              currency: "IDR",
+              colorHex: "#f97316",
+              icon: "credit-card",
+              isActive: true,
+            },
+          });
+        }
+
+        const reply =
+          `💳 *Plafon Paylater Berhasil Disetel!*\n\n` +
+          `• *Provider*: ${targetAccount.name}\n` +
+          `• *Total Plafon*: ${formatRupiah(targetAccount.creditLimit || amount)}\n` +
+          `• *Sisa Limit*: ${formatRupiah(targetAccount.balance)}\n` +
+          `• *Status*: Siap digunakan untuk transaksi!`;
+
+        return { reply, account: targetAccount };
+      }
+
+      // Skenario 2: PAY_BILL_PAYLATER (Bayar / Lunasi Tagihan Paylater)
+      if (parsed.action === "PAY_BILL_PAYLATER") {
+        const paylaterName = parsed.paylaterProvider || parsed.toAccountName || "SPayLater";
+        let paylaterAccount = matchPaylaterAccount(paylaterName);
+
+        if (!paylaterAccount) {
+          const generalMatch = matchAccount(paylaterName);
+          if (
+            generalMatch &&
+            (generalMatch.type === "credit" ||
+              generalMatch.accountCategory === "PAYLATER" ||
+              generalMatch.name.toLowerCase().includes("later"))
+          ) {
+            paylaterAccount = generalMatch;
+          } else {
+            throw new Error(
+              `Akun Paylater "${paylaterName}" belum ditemukan. Silakan set limit terlebih dahulu dengan pesan:\n_Set limit ${paylaterName} 5jt_`
+            );
+          }
+        }
+
+        const regularAccounts = user!.accounts.filter(
+          (a) => a.accountCategory !== "PAYLATER" && a.id !== paylaterAccount!.id
+        );
+        const sourceCandidate = parsed.accountName;
+        const sourceAccount =
+          regularAccounts.find(
+            (a) =>
+              sourceCandidate &&
+              (a.name.toLowerCase() === sourceCandidate.toLowerCase() ||
+                a.name.toLowerCase().includes(sourceCandidate.toLowerCase()))
+          ) || regularAccounts[0];
+
+        if (!sourceAccount) {
+          throw new Error("Tidak ada rekening reguler aktif untuk sumber pembayaran.");
+        }
+
+        if (sourceAccount.balance < amount) {
+          throw new Error(
+            `Saldo *${sourceAccount.name}* tidak mencukupi untuk bayar tagihan.\n` +
+            `Tersedia: ${formatRupiah(sourceAccount.balance)}, dibutuhkan: ${formatRupiah(amount)}`
+          );
+        }
+
+        // Potong saldo rekening sumber
+        const updatedSource = await tx.account.update({
+          where: { id: sourceAccount.id },
+          data: { balance: { decrement: amount } },
+        });
+
+        // Pulihkan limit paylater
+        const maxLimit = paylaterAccount.creditLimit ?? (paylaterAccount.balance + amount);
+        const newPaylaterBalance = Math.min(maxLimit, paylaterAccount.balance + amount);
+
+        const updatedPaylater = await tx.account.update({
+          where: { id: paylaterAccount.id },
+          data: { balance: newPaylaterBalance },
+        });
+
+        // Catat mutasi pengeluaran
+        const category =
+          matchCategory("Tagihan & Utilitas", "expense") ||
+          matchCategory("Tagihan", "expense");
+
+        const createdTx = await tx.transaction.create({
+          data: {
+            userId: user!.id,
+            type: "expense",
+            amount,
+            date: new Date(),
+            accountId: sourceAccount.id,
+            toAccountId: paylaterAccount.id,
+            categoryId: category?.id || null,
+            description: `Bayar Tagihan ${paylaterAccount.name}`,
+            tags: "#whatsapp #paylater #bill",
+          },
+        });
+
+        const reply =
+          `🎉 *Pembayaran Tagihan Paylater Berhasil!*\n\n` +
+          `• *Provider*: ${paylaterAccount.name}\n` +
+          `• *Nominal Dibayar*: ${formatRupiah(amount)}\n` +
+          `• *Sumber Dana*: ${sourceAccount.name}\n` +
+          `• *Sisa Saldo ${sourceAccount.name}*: ${formatRupiah(updatedSource.balance)}\n` +
+          `• *Sisa Limit ${paylaterAccount.name} Kini*: ${formatRupiah(updatedPaylater.balance)}${
+            updatedPaylater.creditLimit ? ` / ${formatRupiah(updatedPaylater.creditLimit)}` : ""
+          }`;
+
+        return { reply, transaction: createdTx };
+      }
+
+      // Skenario 3: TRANSFER
       if (txType === "transfer") {
         const sourceAccount = matchAccount(parsed.accountName);
         if (!sourceAccount) {
@@ -378,18 +533,27 @@ export async function POST(request: NextRequest) {
         return { reply, transaction: createdTx };
       }
 
-      // Skenario B: PENGELUARAN (EXPENSE)
+      // Skenario 4: PENGELUARAN (EXPENSE)
       if (txType === "expense") {
         const sourceAccount = matchAccount(parsed.accountName);
         if (!sourceAccount) {
           throw new Error("Akun pengeluaran tidak ditemukan");
         }
 
-        if (sourceAccount.type !== "credit" && sourceAccount.balance < amount) {
-          throw new Error(
-            `Saldo *${sourceAccount.name}* tidak mencukupi untuk pengeluaran ini.\n` +
-            `Tersedia: ${formatRupiah(sourceAccount.balance)}, dibutuhkan: ${formatRupiah(amount)}`
-          );
+        const isPaylater = sourceAccount.accountCategory === "PAYLATER";
+
+        if (sourceAccount.balance < amount) {
+          if (isPaylater) {
+            throw new Error(
+              `Sisa limit *${sourceAccount.name}* tidak mencukupi untuk transaksi ini.\n` +
+              `Tersedia: ${formatRupiah(sourceAccount.balance)}, dibutuhkan: ${formatRupiah(amount)}`
+            );
+          } else if (sourceAccount.type !== "credit") {
+            throw new Error(
+              `Saldo *${sourceAccount.name}* tidak mencukupi untuk pengeluaran ini.\n` +
+              `Tersedia: ${formatRupiah(sourceAccount.balance)}, dibutuhkan: ${formatRupiah(amount)}`
+            );
+          }
         }
 
         const category = matchCategory(parsed.categoryName, "expense");
@@ -408,18 +572,26 @@ export async function POST(request: NextRequest) {
             accountId: sourceAccount.id,
             categoryId: category?.id || null,
             description: parsed.description || "Pengeluaran via WhatsApp",
-            tags: "#whatsapp",
+            tags: isPaylater ? "#whatsapp #paylater" : "#whatsapp",
           },
         });
 
-        const reply =
-          `✅ *Pengeluaran Berhasil Dicatat!*\n\n` +
-          `• *Tipe*: Pengeluaran\n` +
-          `• *Nominal*: ${formatRupiah(amount)}\n` +
-          `• *Akun*: ${sourceAccount.name}\n` +
-          `• *Kategori*: ${category?.name || "Lain-lain"}\n` +
-          `• *Keterangan*: ${createdTx.description}\n` +
-          `• *Sisa Saldo*: ${formatRupiah(updatedAccount.balance)}`;
+        const reply = isPaylater
+          ? `✅ *Pengeluaran Paylater Berhasil Dicatat!*\n\n` +
+            `• *Keperluan*: ${createdTx.description}\n` +
+            `• *Nominal*: ${formatRupiah(amount)}\n` +
+            `• *Metode*: ${sourceAccount.name}\n` +
+            `• *Kategori*: ${category?.name || "Lain-lain"}\n` +
+            `• *Sisa Limit*: ${formatRupiah(updatedAccount.balance)}${
+              sourceAccount.creditLimit ? ` (dari Plafon ${formatRupiah(sourceAccount.creditLimit)})` : ""
+            }`
+          : `✅ *Pengeluaran Berhasil Dicatat!*\n\n` +
+            `• *Tipe*: Pengeluaran\n` +
+            `• *Nominal*: ${formatRupiah(amount)}\n` +
+            `• *Akun*: ${sourceAccount.name}\n` +
+            `• *Kategori*: ${category?.name || "Lain-lain"}\n` +
+            `• *Keterangan*: ${createdTx.description}\n` +
+            `• *Sisa Saldo*: ${formatRupiah(updatedAccount.balance)}`;
 
         return { reply, transaction: createdTx };
       }
