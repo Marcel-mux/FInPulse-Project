@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { CreditCard, Plus } from "lucide-react";
 import { useAccounts } from "@/hooks/useFinance";
 import { useAppStore } from "@/store/useAppStore";
@@ -91,51 +92,65 @@ export function PaylaterSection() {
           </div>
         )}
 
-        {/* Loading State */}
-        {isLoading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {[1, 2].map((i) => (
+        {/* Wadah Gulir Horizontal (Horizontal Carousel) */}
+        <div className="w-full flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 pt-1 no-scrollbar touch-pan-x">
+          {isLoading ? (
+            /* Skeleton loader horizontal */
+            Array.from({ length: 2 }).map((_, idx) => (
               <div
-                key={i}
-                className="h-44 rounded-2xl bg-white/[0.03] animate-pulse border border-white/5"
+                key={idx}
+                className="min-w-[285px] sm:min-w-[320px] max-w-[340px] h-52 rounded-2xl bg-charcoal-900/60 border border-white/[0.06] animate-pulse shrink-0 snap-start"
               />
-            ))}
-          </div>
-        ) : paylaterAccounts.length === 0 ? (
-          /* Empty State */
-          <div className="py-8 px-4 rounded-xl bg-charcoal-900/40 border border-dashed border-white/10 flex flex-col items-center text-center gap-3">
-            <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20">
-              <CreditCard className="w-6 h-6" />
+            ))
+          ) : paylaterAccounts.length === 0 ? (
+            /* Empty State */
+            <div className="w-full py-8 px-4 rounded-xl bg-charcoal-900/40 border border-dashed border-white/10 flex flex-col items-center text-center gap-3">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500/10 text-orange-400 flex items-center justify-center border border-orange-500/20">
+                <CreditCard className="w-6 h-6" />
+              </div>
+              <div className="max-w-md">
+                <h3 className="text-sm font-bold text-white mb-1">
+                  Belum Ada Paylater Terdaftar
+                </h3>
+                <p className="text-xs text-gray-400 leading-relaxed">
+                  Pantau sisa plafon SPayLater, GoPay Later, Kredivo, atau Akulaku tanpa mencampurnya dengan saldo kas nyata. Catat transaksi dan set limit otomatis via WhatsApp Bot!
+                </p>
+              </div>
+              <button
+                onClick={() => openPaylaterModal(null)}
+                className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-charcoal-950 font-bold text-xs hover:bg-orange-400 transition-colors shadow-lg shadow-orange-500/20 cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Daftarkan Paylater Pertama</span>
+              </button>
             </div>
-            <div className="max-w-md">
-              <h3 className="text-sm font-bold text-white mb-1">
-                Belum Ada Paylater Terdaftar
-              </h3>
-              <p className="text-xs text-gray-400 leading-relaxed">
-                Pantau sisa plafon SPayLater, GoPay Later, Kredivo, atau Akulaku tanpa mencampurnya dengan saldo kas nyata. Catat transaksi dan set limit otomatis via WhatsApp Bot!
-              </p>
-            </div>
-            <button
-              onClick={() => openPaylaterModal(null)}
-              className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-charcoal-950 font-bold text-xs hover:bg-orange-400 transition-colors shadow-lg shadow-orange-500/20 cursor-pointer"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Daftarkan Paylater Pertama</span>
-            </button>
-          </div>
-        ) : (
-          /* Cards Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {paylaterAccounts.map((account) => (
-              <PaylaterCard
-                key={account.id}
-                account={account}
-                onEdit={handleEdit}
-                onPayBill={handlePayBill}
-              />
-            ))}
-          </div>
-        )}
+          ) : (
+            <>
+              {/* Cards Carousel */}
+              {paylaterAccounts.map((account) => (
+                <PaylaterCard
+                  key={account.id}
+                  account={account}
+                  onEdit={handleEdit}
+                  onPayBill={handlePayBill}
+                />
+              ))}
+
+              {/* Tombol Aksi Cepat: Card Tambah Paylater di Akhir Carousel */}
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => openPaylaterModal(null)}
+                className="min-w-[200px] sm:min-w-[220px] max-w-[240px] h-auto min-h-[220px] rounded-2xl border border-dashed border-white/15 hover:border-orange-500/50 hover:bg-orange-500/[0.03] transition-all flex flex-col items-center justify-center gap-3 cursor-pointer text-gray-400 hover:text-orange-400 shrink-0 select-none snap-start p-4"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-orange-500/10">
+                  <Plus className="w-5 h-5" />
+                </div>
+                <span className="text-xs font-semibold">Tambah Paylater</span>
+              </motion.div>
+            </>
+          )}
+        </div>
       </div>
     </section>
   );

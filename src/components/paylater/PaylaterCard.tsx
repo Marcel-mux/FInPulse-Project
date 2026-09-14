@@ -1,9 +1,11 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { CreditCard, Edit2, ArrowUpRight } from "lucide-react";
+import { useRef } from "react";
+import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
+import { ArrowUpRight, CreditCard } from "lucide-react";
 import { Account } from "@/types";
 import { formatCurrency } from "@/lib/formatters";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 interface PaylaterCardProps {
   account: Account;
@@ -12,12 +14,45 @@ interface PaylaterCardProps {
 }
 
 export function PaylaterCard({ account, onEdit, onPayBill }: PaylaterCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // 3D Tilt physics values (identik dengan AccountCard)
+  const x = useMotionValue(0);
+  const y = useMotionValue(0);
+
+  const mouseXSpring = useSpring(x, { stiffness: 260, damping: 25 });
+  const mouseYSpring = useSpring(y, { stiffness: 260, damping: 25 });
+
+  const rotateX = useTransform(mouseYSpring, [-0.5, 0.5], ["10deg", "-10deg"]);
+  const rotateY = useTransform(mouseXSpring, [-0.5, 0.5], ["-10deg", "10deg"]);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = cardRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const width = rect.width;
+    const height = rect.height;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
+    const xPct = mouseX / width - 0.5;
+    const yPct = mouseY / height - 0.5;
+    x.set(xPct);
+    y.set(yPct);
+  };
+
+  const handleMouseLeave = () => {
+    x.set(0);
+    y.set(0);
+  };
+
   const creditLimit = account.creditLimit ?? account.balance ?? 0;
   const availableLimit = Math.max(0, account.balance);
   const usedLimit = Math.max(0, creditLimit - availableLimit);
-  const usagePercentage = creditLimit > 0 ? Math.min(100, Math.round((usedLimit / creditLimit) * 100)) : 0;
+  const usagePercentage =
+    creditLimit > 0
+      ? Math.min(100, Math.round((usedLimit / creditLimit) * 100))
+      : 0;
 
-  // Tentukan badge status & warna progress
+  // Status badge & bar color
   let statusBadge = {
     label: "Aman",
     colorClass: "bg-emerald-500/10 text-emerald-400 border-emerald-500/20",
@@ -40,101 +75,170 @@ export function PaylaterCard({ account, onEdit, onPayBill }: PaylaterCardProps) 
 
   // Provider theme accents
   const nameLower = account.name.toLowerCase();
-  let cardAccent = "from-orange-500/15 via-charcoal-900 to-charcoal-900 border-orange-500/20";
-  let iconBg = "bg-orange-500/20 text-orange-400";
+  let themeConfig = {
+    accentColor: "#f97316",
+    gradient: "from-orange-600/20 via-orange-950/30 to-charcoal-900",
+    border: "border-orange-500/30 group-hover:border-orange-400/50",
+    glowClass: "shadow-[0_0_25px_-5px_rgba(249,115,22,0.3)]",
+    iconBg: "bg-orange-500/20 text-orange-400",
+  };
 
   if (nameLower.includes("gopay")) {
-    cardAccent = "from-emerald-500/15 via-charcoal-900 to-charcoal-900 border-emerald-500/20";
-    iconBg = "bg-emerald-500/20 text-emerald-400";
+    themeConfig = {
+      accentColor: "#10b981",
+      gradient: "from-emerald-600/20 via-emerald-950/30 to-charcoal-900",
+      border: "border-emerald-500/30 group-hover:border-emerald-400/50",
+      glowClass: "shadow-[0_0_25px_-5px_rgba(16,185,129,0.3)]",
+      iconBg: "bg-emerald-500/20 text-emerald-400",
+    };
   } else if (nameLower.includes("kredivo")) {
-    cardAccent = "from-blue-500/15 via-charcoal-900 to-charcoal-900 border-blue-500/20";
-    iconBg = "bg-blue-500/20 text-blue-400";
+    themeConfig = {
+      accentColor: "#3b82f6",
+      gradient: "from-blue-600/20 via-blue-950/30 to-charcoal-900",
+      border: "border-blue-500/30 group-hover:border-blue-400/50",
+      glowClass: "shadow-[0_0_25px_-5px_rgba(59,130,246,0.3)]",
+      iconBg: "bg-blue-500/20 text-blue-400",
+    };
   } else if (nameLower.includes("akulaku")) {
-    cardAccent = "from-red-500/15 via-charcoal-900 to-charcoal-900 border-red-500/20";
-    iconBg = "bg-red-500/20 text-red-400";
-  } else if (nameLower.includes("indodana")) {
-    cardAccent = "from-cyan-500/15 via-charcoal-900 to-charcoal-900 border-cyan-500/20";
-    iconBg = "bg-cyan-500/20 text-cyan-400";
+    themeConfig = {
+      accentColor: "#ef4444",
+      gradient: "from-rose-600/20 via-red-950/30 to-charcoal-900",
+      border: "border-rose-500/30 group-hover:border-rose-400/50",
+      glowClass: "shadow-[0_0_25px_-5px_rgba(239,68,68,0.3)]",
+      iconBg: "bg-rose-500/20 text-rose-400",
+    };
+  } else if (nameLower.includes("indodana") || nameLower.includes("atome")) {
+    themeConfig = {
+      accentColor: "#06b6d4",
+      gradient: "from-cyan-600/20 via-cyan-950/30 to-charcoal-900",
+      border: "border-cyan-500/30 group-hover:border-cyan-400/50",
+      glowClass: "shadow-[0_0_25px_-5px_rgba(6,182,212,0.3)]",
+      iconBg: "bg-cyan-500/20 text-cyan-400",
+    };
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      whileHover={{ y: -2 }}
-      transition={{ duration: 0.2 }}
-      className={`p-4 sm:p-5 rounded-2xl bg-gradient-to-b ${cardAccent} border relative flex flex-col justify-between gap-4 shadow-lg hover:border-white/20 transition-all`}
+    <div
+      style={{ perspective: 1000 }}
+      className="min-w-[285px] sm:min-w-[320px] max-w-[340px] flex-shrink-0 snap-start h-auto"
     >
-      {/* Header Card: Provider Name & Edit Button */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-3">
-          <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${iconBg} shadow-inner`}>
-            <CreditCard className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white tracking-tight">{account.name}</h3>
-            <span className="text-[11px] text-gray-400">Plafon: {formatCurrency(creditLimit)}</span>
-          </div>
-        </div>
+      <motion.div
+        ref={cardRef}
+        onMouseMove={handleMouseMove}
+        onMouseLeave={handleMouseLeave}
+        onClick={() => onEdit(account)}
+        style={{
+          rotateX,
+          rotateY,
+          transformStyle: "preserve-3d",
+        }}
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        className={`group relative h-full rounded-2xl p-4 sm:p-5 cursor-pointer select-none transition-all duration-200 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between gap-3.5 overflow-hidden bg-gradient-to-br ${themeConfig.gradient} border ${themeConfig.border} ${themeConfig.glowClass}`}
+      >
+        {/* Dynamic Sheen overlay on hover */}
+        <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 bg-gradient-to-tr from-white/0 via-white/[0.07] to-white/0 pointer-events-none" />
 
-        <div className="flex items-center gap-1.5">
-          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge.colorClass}`}>
-            {statusBadge.label}
-          </span>
-          <button
-            onClick={() => onEdit(account)}
-            title="Edit Plafon & Sisa Limit"
-            className="p-1.5 text-gray-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors cursor-pointer"
-          >
-            <Edit2 className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      </div>
-
-      {/* Main Numbers: Sisa Limit vs Terpakai */}
-      <div className="grid grid-cols-2 gap-2 p-3 rounded-xl bg-charcoal-950/60 border border-white/5">
-        <div>
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block mb-0.5">
-            Sisa Limit
-          </span>
-          <span className="text-base sm:text-lg font-black font-mono text-emerald-400">
-            {formatCurrency(availableLimit)}
-          </span>
-        </div>
-        <div className="text-right">
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider block mb-0.5">
-            Terpakai
-          </span>
-          <span className="text-base sm:text-lg font-black font-mono text-rose-400">
-            {formatCurrency(usedLimit)}
-          </span>
-        </div>
-      </div>
-
-      {/* Progress Bar Limit Terpakai */}
-      <div className="space-y-1.5">
-        <div className="flex items-center justify-between text-[11px] font-medium">
-          <span className="text-gray-400">Penggunaan Plafon</span>
-          <span className="text-gray-300 font-bold font-mono">{usagePercentage}%</span>
-        </div>
-        <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
-          <div
-            className={`h-full rounded-full bg-gradient-to-r ${statusBadge.barColor} transition-all duration-500`}
-            style={{ width: `${usagePercentage}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Action Button: Bayar Tagihan */}
-      <div className="pt-1">
-        <button
-          onClick={() => onPayBill(account)}
-          className="w-full py-2 px-3 rounded-xl bg-white/[0.07] hover:bg-white/[0.12] border border-white/10 text-xs font-semibold text-white flex items-center justify-center gap-1.5 transition-colors cursor-pointer group"
+        {/* 1. Card Header */}
+        <div
+          style={{ transform: "translateZ(25px)" }}
+          className="flex items-start justify-between gap-2"
         >
-          <span>Bayar Tagihan</span>
-          <ArrowUpRight className="w-3.5 h-3.5 text-gray-400 group-hover:text-emerald-400 transition-colors" />
-        </button>
-      </div>
-    </motion.div>
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-10 h-10 rounded-xl flex items-center justify-center border border-white/10 ${themeConfig.iconBg}`}
+            >
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white tracking-wide leading-tight">
+                {account.name}
+              </h3>
+              <span className="text-[11px] font-medium text-gray-400">
+                Paylater / Kredit
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <span
+              className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${statusBadge.colorClass}`}
+            >
+              {statusBadge.label}
+            </span>
+          </div>
+        </div>
+
+        {/* 2. Card Body: Sisa Limit (Big Font with AnimatedCounter) */}
+        <div
+          style={{ transform: "translateZ(35px)" }}
+          className="flex flex-col gap-1"
+        >
+          <span className="text-xs text-gray-400 font-medium">
+            Sisa Limit Aktif
+          </span>
+          <div className="text-2xl font-black text-emerald-400 tracking-tight flex items-baseline">
+            <AnimatedCounter
+              value={availableLimit}
+              prefix="Rp "
+              className="tabular-nums"
+            />
+          </div>
+        </div>
+
+        {/* 3. Progress Bar & Pemakaian Plafon */}
+        <div
+          style={{ transform: "translateZ(20px)" }}
+          className="flex flex-col gap-1.5 p-2.5 rounded-xl bg-charcoal-950/60 border border-white/[0.05]"
+        >
+          <div className="flex items-center justify-between text-[11px] font-medium">
+            <span className="text-gray-400">Penggunaan Plafon</span>
+            <span className="text-gray-200 font-bold font-mono">
+              {usagePercentage}%
+            </span>
+          </div>
+
+          <div className="w-full h-2 rounded-full bg-white/10 overflow-hidden">
+            <div
+              className={`h-full rounded-full bg-gradient-to-r ${statusBadge.barColor} transition-all duration-500`}
+              style={{ width: `${usagePercentage}%` }}
+            />
+          </div>
+
+          <div className="flex items-center justify-between text-[10px] text-gray-400 font-mono pt-0.5">
+            <span>Terpakai: {formatCurrency(usedLimit)}</span>
+            <span>Total: {formatCurrency(creditLimit)}</span>
+          </div>
+        </div>
+
+        {/* 4. Card Footer / Teks Interaksi & Tombol Cepat */}
+        <div
+          style={{ transform: "translateZ(15px)" }}
+          className="flex items-center justify-between pt-2 border-t border-white/[0.06] text-[11px] text-gray-400"
+        >
+          <div className="flex items-center gap-1.5">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            <span className="text-[10px] text-gray-400 font-medium">Aktif</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onPayBill(account);
+              }}
+              className="px-2.5 py-1 rounded-lg bg-white/[0.08] hover:bg-white/[0.15] border border-white/10 text-[10px] font-bold text-white flex items-center gap-1 transition-colors cursor-pointer"
+            >
+              <span>Bayar</span>
+              <ArrowUpRight className="w-3 h-3 text-emerald-400" />
+            </button>
+            <span className="group-hover:text-white transition-colors text-[11px] font-medium">
+              Ketuk untuk detail →
+            </span>
+          </div>
+        </div>
+      </motion.div>
+    </div>
   );
 }
