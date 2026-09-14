@@ -3,6 +3,7 @@
 import { Header } from "@/components/layout/Header";
 import { NetWorthCard } from "@/components/dashboard/NetWorthCard";
 import { AccountCarousel } from "@/components/dashboard/AccountCarousel";
+import { BillSection } from "@/components/bills/BillSection";
 import { BudgetSection } from "@/components/budget/BudgetSection";
 import { RecentActivityFeed } from "@/components/dashboard/RecentActivityFeed";
 import { QuickSpendingWidget } from "@/components/dashboard/QuickSpendingWidget";
@@ -70,6 +71,11 @@ export default function DashboardPage() {
 
           {/* Kolom Kanan / Sidebar Widget (lg:col-span-4) */}
           <div className="lg:col-span-4 flex flex-col gap-6 sm:gap-8">
+            {/* Tagihan & Autodebet (Bills & Recurring) */}
+            <div id="bill-section">
+              <BillSection />
+            </div>
+
             {/* Ringkasan Anggaran Bulanan (Budgets) */}
             <BudgetSection />
 

@@ -24,6 +24,7 @@ model User {
   categories   Category[]
   transactions Transaction[]
   budgets      Budget[]
+  bills        Bill[]
 
   @@map("users")
 }
@@ -43,6 +44,7 @@ model Account {
   user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactionsFrom Transaction[] @relation("AccountTransactionsFrom")
   transactionsTo   Transaction[] @relation("AccountTransactionsTo")
+  bills            Bill[]
 
   @@map("accounts")
 }
@@ -59,6 +61,7 @@ model Category {
   user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
   transactions Transaction[]
   budgets      Budget[]
+  bills        Bill[]
 
   @@map("categories")
 }
@@ -99,4 +102,24 @@ model Budget {
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
   @@map("budgets")
+}
+
+model Bill {
+  id           String    @id @default(cuid())
+  userId       String    @map("user_id")
+  name         String
+  amount       Float
+  dueDay       Int       @map("due_day") // tanggal 1 - 31
+  autoDeduct   Boolean   @default(true) @map("auto_deduct")
+  lastDeducted DateTime? @map("last_deducted")
+  accountId    String    @map("account_id")
+  categoryId   String    @map("category_id")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account      Account   @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  category     Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@map("bills")
 }

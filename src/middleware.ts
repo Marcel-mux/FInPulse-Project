@@ -25,6 +25,7 @@ const authMiddleware = withAuth(
           pathname.startsWith("/api/auth") ||
           pathname.startsWith("/api/register") ||
           pathname.startsWith("/api/webhook") ||
+          pathname.startsWith("/api/cron") ||
           pathname === "/sw.js" ||
           pathname === "/manifest.json" ||
           pathname.startsWith("/icons")
@@ -46,9 +47,10 @@ const authMiddleware = withAuth(
 export default function middleware(req: NextRequest, event: NextFetchEvent) {
   const { pathname } = req.nextUrl;
 
-  // Bypass autentikasi sepenuhnya untuk rute webhook eksternal & aset PWA publik
+  // Bypass autentikasi sepenuhnya untuk rute webhook eksternal, cron job, & aset PWA publik
   if (
     pathname.startsWith("/api/webhook") ||
+    pathname.startsWith("/api/cron") ||
     pathname === "/sw.js" ||
     pathname === "/manifest.json" ||
     pathname.startsWith("/icons")

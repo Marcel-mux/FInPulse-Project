@@ -141,3 +141,47 @@ export interface AnalyticsResponse {
   expenseTrend: ExpenseTrendPoint[];
   transactions: TransactionWithRelations[];
 }
+
+export type BillStatus = "paid" | "due_today" | "upcoming" | "overdue";
+
+export interface BillWithRelations {
+  id: string;
+  userId: string;
+  name: string;
+  amount: number;
+  dueDay: number;
+  autoDeduct: boolean;
+  lastDeducted: string | null;
+  accountId: string;
+  categoryId: string;
+  createdAt: string;
+  updatedAt: string;
+  account: {
+    id: string;
+    name: string;
+    type: AccountType;
+    colorHex: string | null;
+    icon: string | null;
+    balance: number;
+  };
+  category: {
+    id: string;
+    name: string;
+    type: string;
+    colorHex: string | null;
+    icon: string | null;
+  };
+  isPaidThisMonth: boolean;
+  daysUntilDue: number;
+  status: BillStatus;
+}
+
+export interface BillsResponse {
+  bills: BillWithRelations[];
+  totalMonthlyBills: number;
+  paidCount: number;
+  upcomingCount: number;
+  totalPaidAmount: number;
+  totalPendingAmount: number;
+}
+

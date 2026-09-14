@@ -36,6 +36,7 @@ export function Header() {
     setExportModalOpen,
     setWhatsAppModalOpen,
     openBudgetForm,
+    openBillForm,
     setTransactionModalOpen,
   } = useAppStore();
 
@@ -376,6 +377,25 @@ export function Header() {
                       >
                         <PieChart className="w-4 h-4 text-amber-400 shrink-0" />
                         <span>Anggaran (Budgets)</span>
+                      </button>
+
+                      {/* Tagihan & Autodebet */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          if (pathname === "/") {
+                            document
+                              .getElementById("bill-section")
+                              ?.scrollIntoView({ behavior: "smooth" });
+                          } else {
+                            openBillForm(null);
+                          }
+                        }}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold text-gray-300 hover:bg-white/[0.05] hover:text-white transition-all w-full text-left cursor-pointer"
+                      >
+                        <Receipt className="w-4 h-4 text-emerald-400 shrink-0" />
+                        <span>Tagihan & Autodebet</span>
                       </button>
 
                       {/* Kategori Anggaran */}

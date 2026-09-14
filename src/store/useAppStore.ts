@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Account, BudgetWithCategory, Category } from "@/types";
+import { Account, BillWithRelations, BudgetWithCategory, Category } from "@/types";
 
 export type TransactionType = "income" | "expense" | "transfer";
 
@@ -31,6 +31,10 @@ interface AppState {
   isBudgetModalOpen: boolean;
   editingBudget: BudgetWithCategory | null;
 
+  // Bill & recurring subscription modals
+  isBillModalOpen: boolean;
+  editingBill: BillWithRelations | null;
+
   // Export report modal
   isExportModalOpen: boolean;
 
@@ -59,6 +63,9 @@ interface AppState {
   openBudgetForm: (budget?: BudgetWithCategory | null) => void;
   closeBudgetForm: () => void;
 
+  openBillForm: (bill?: BillWithRelations | null) => void;
+  closeBillForm: () => void;
+
   setExportModalOpen: (open: boolean) => void;
   setWhatsAppModalOpen: (open: boolean) => void;
 }
@@ -84,6 +91,9 @@ export const useAppStore = create<AppState>((set) => ({
 
   isBudgetModalOpen: false,
   editingBudget: null,
+
+  isBillModalOpen: false,
+  editingBill: null,
 
   isExportModalOpen: false,
   isWhatsAppModalOpen: false,
@@ -122,6 +132,11 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isBudgetModalOpen: true, editingBudget: budget }),
   closeBudgetForm: () =>
     set({ isBudgetModalOpen: false, editingBudget: null }),
+
+  openBillForm: (bill = null) =>
+    set({ isBillModalOpen: true, editingBill: bill }),
+  closeBillForm: () =>
+    set({ isBillModalOpen: false, editingBill: null }),
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
   setWhatsAppModalOpen: (open) => set({ isWhatsAppModalOpen: open }),

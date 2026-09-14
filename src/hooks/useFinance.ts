@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   AccountsResponse,
   AnalyticsResponse,
+  BillsResponse,
   BudgetsResponse,
   Category,
   TransactionWithRelations,
@@ -110,6 +111,19 @@ export function useAnalytics(
       const res = await fetch(url);
       if (!res.ok) {
         throw new Error("Gagal memuat data analitik keuangan");
+      }
+      return res.json();
+    },
+  });
+}
+
+export function useBills() {
+  return useQuery<BillsResponse>({
+    queryKey: ["bills"],
+    queryFn: async () => {
+      const res = await fetch("/api/bills");
+      if (!res.ok) {
+        throw new Error("Gagal memuat data tagihan & autodebet");
       }
       return res.json();
     },
@@ -400,5 +414,112 @@ export function useDeleteBudget() {
     },
   });
 }
+
+// ========================
+// MUTATIONS - BILLS & AUTODEBET
+// ========================
+
+export function useCreateBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: {
+      name: string;
+      amount: number;
+      dueDay: number;
+      accountId: string;
+      categoryId: string;
+      autoDeduct?: boolean;
+    }) => {
+      const res = await fetch("/api/bills", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal menambahkan tagihan");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
+  });
+}
+
+export function useUpdateBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...data
+    }: {
+      id: string;
+      name?: string;
+      amount?: number;
+      dueDay?: number;
+      accountId?: string;
+      categoryId?: string;
+      autoDeduct?: boolean;
+      resetDeducted?: boolean;
+    }) => {
+      const res = await fetch(`/api/bills/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal memperbarui tagihan");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
+  });
+}
+
+export function useDeleteBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/bills/${id}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal menghapus tagihan");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+    },
+  });
+}
+
+export function usePayBill() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/bills/${id}/pay`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || "Gagal membayar tagihan");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    },
+  });
+}
+
 
 
