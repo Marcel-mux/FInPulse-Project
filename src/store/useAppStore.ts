@@ -161,28 +161,22 @@ export const useAppStore = create<AppState>((set) => ({
 
   openPaylaterModal: (account = null) =>
     set({
-      isLoanModalOpen: true,
-      loanModalTab: "paylater",
+      isPaylaterModalOpen: true,
       editingPaylaterAccount: account,
-      isPaylaterModalOpen: false,
     }),
   closePaylaterModal: () =>
     set({
       isPaylaterModalOpen: false,
-      isLoanModalOpen: false,
       editingPaylaterAccount: null,
     }),
 
-  openLoanModal: (tab = "loan") =>
+  openLoanModal: () =>
     set({
       isLoanModalOpen: true,
-      loanModalTab: tab,
     }),
   closeLoanModal: () =>
     set({
       isLoanModalOpen: false,
-      isPaylaterModalOpen: false,
-      editingPaylaterAccount: null,
     }),
   setLoanModalTab: (tab) => set({ loanModalTab: tab }),
 
