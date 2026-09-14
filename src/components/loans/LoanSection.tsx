@@ -41,7 +41,7 @@ export function LoanSection() {
         </div>
 
         <button
-          onClick={openLoanModal}
+          onClick={() => openLoanModal("loan")}
           className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-orange-500/10 hover:bg-orange-500/20 text-orange-400 text-xs font-semibold border border-orange-500/20 transition-all cursor-pointer shadow-sm"
         >
           <Plus className="w-3.5 h-3.5" />
@@ -104,7 +104,7 @@ export function LoanSection() {
               </p>
             </div>
             <button
-              onClick={openLoanModal}
+              onClick={() => openLoanModal("loan")}
               className="mt-1 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-orange-500 text-charcoal-950 font-bold text-xs hover:bg-orange-400 transition-colors shadow-lg shadow-orange-500/20 cursor-pointer"
             >
               <Plus className="w-4 h-4" />

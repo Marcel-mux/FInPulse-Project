@@ -47,6 +47,7 @@ interface AppState {
 
   // Loan / Installment modal
   isLoanModalOpen: boolean;
+  loanModalTab: "loan" | "paylater";
 
   // Actions
   setTransactionModalOpen: (open: boolean, defaultType?: TransactionType) => void;
@@ -76,8 +77,9 @@ interface AppState {
   openPaylaterModal: (account?: Account | null) => void;
   closePaylaterModal: () => void;
 
-  openLoanModal: () => void;
+  openLoanModal: (tab?: "loan" | "paylater") => void;
   closeLoanModal: () => void;
+  setLoanModalTab: (tab: "loan" | "paylater") => void;
 
   setExportModalOpen: (open: boolean) => void;
   setWhatsAppModalOpen: (open: boolean) => void;
@@ -112,6 +114,7 @@ export const useAppStore = create<AppState>((set) => ({
   editingPaylaterAccount: null,
 
   isLoanModalOpen: false,
+  loanModalTab: "loan",
 
   isExportModalOpen: false,
   isWhatsAppModalOpen: false,
@@ -157,12 +160,31 @@ export const useAppStore = create<AppState>((set) => ({
     set({ isBillModalOpen: false, editingBill: null }),
 
   openPaylaterModal: (account = null) =>
-    set({ isPaylaterModalOpen: true, editingPaylaterAccount: account }),
+    set({
+      isLoanModalOpen: true,
+      loanModalTab: "paylater",
+      editingPaylaterAccount: account,
+      isPaylaterModalOpen: false,
+    }),
   closePaylaterModal: () =>
-    set({ isPaylaterModalOpen: false, editingPaylaterAccount: null }),
+    set({
+      isPaylaterModalOpen: false,
+      isLoanModalOpen: false,
+      editingPaylaterAccount: null,
+    }),
 
-  openLoanModal: () => set({ isLoanModalOpen: true }),
-  closeLoanModal: () => set({ isLoanModalOpen: false }),
+  openLoanModal: (tab = "loan") =>
+    set({
+      isLoanModalOpen: true,
+      loanModalTab: tab,
+    }),
+  closeLoanModal: () =>
+    set({
+      isLoanModalOpen: false,
+      isPaylaterModalOpen: false,
+      editingPaylaterAccount: null,
+    }),
+  setLoanModalTab: (tab) => set({ loanModalTab: tab }),
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
   setWhatsAppModalOpen: (open) => set({ isWhatsAppModalOpen: open }),
