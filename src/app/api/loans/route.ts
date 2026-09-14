@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAuthUserId } from "@/lib/userBootstrap";
+import { formatCurrency } from "@/lib/formatters";
 
 export const dynamic = "force-dynamic";
 
@@ -96,6 +97,7 @@ export async function POST(request: NextRequest) {
       paylaterAccountId,
       sourceAccountId,
       monthlyTotal: customMonthlyTotal,
+      loanType,
     } = body;
 
     if (!name || typeof name !== "string" || !name.trim()) {
@@ -159,7 +161,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Eksekusi atomik pencairan pinjaman & pembuatan record Loan
+    const isPaylaterPurchase = loanType === "PAYLATER_PURCHASE";
+
+    if (paylaterAcc.balance < numTotalAmount) {
+      return NextResponse.json(
+        {
+          error: `Sisa limit ${paylaterAcc.name} tidak mencukupi (${formatCurrency(
+            paylaterAcc.balance
+          )} tersisa dari total ${formatCurrency(numTotalAmount)})`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // Eksekusi atomik pencairan pinjaman / cicilan paylater & pembuatan record Loan
     const result = await prisma.$transaction(async (tx) => {
       // 1. Kurangi limit paylater
       await tx.account.update({
@@ -169,29 +184,44 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 2. Tambah saldo rekening pencairan
-      await tx.account.update({
-        where: { id: sourceAcc.id },
-        data: {
-          balance: { increment: numTotalAmount },
-        },
-      });
+      if (!isPaylaterPurchase) {
+        // Mode Kredit Pinjaman Tunai: Tambah saldo rekening pencairan
+        await tx.account.update({
+          where: { id: sourceAcc.id },
+          data: {
+            balance: { increment: numTotalAmount },
+          },
+        });
 
-      // 3. Catat transaksi mutasi pencairan pinjaman
-      await tx.transaction.create({
-        data: {
-          userId,
-          type: "transfer",
-          amount: numTotalAmount,
-          accountId: paylaterAcc.id,
-          toAccountId: sourceAcc.id,
-          date: new Date(),
-          description: `Pencairan ${name.trim()} (${numTenor} bln)`,
-          tags: "#loan #disbursement #paylater",
-        },
-      });
+        // Catat transaksi mutasi pencairan pinjaman (transfer)
+        await tx.transaction.create({
+          data: {
+            userId,
+            type: "transfer",
+            amount: numTotalAmount,
+            accountId: paylaterAcc.id,
+            toAccountId: sourceAcc.id,
+            date: new Date(),
+            description: `Pencairan ${name.trim()} (${numTenor} bln)`,
+            tags: "#loan #disbursement #paylater",
+          },
+        });
+      } else {
+        // Mode Cicilan Belanja Paylater: Catat transaksi pengeluaran belanja barang
+        await tx.transaction.create({
+          data: {
+            userId,
+            type: "expense",
+            amount: numTotalAmount,
+            accountId: paylaterAcc.id,
+            date: new Date(),
+            description: `Belanja Paylater: ${name.trim()} (${numTenor} bln)`,
+            tags: "#paylater #purchase #installment",
+          },
+        });
+      }
 
-      // 4. Simpan entitas Loan baru
+      // 4. Simpan entitas Loan baru (jadwal cicilan berkala)
       const newLoan = await tx.loan.create({
         data: {
           userId,

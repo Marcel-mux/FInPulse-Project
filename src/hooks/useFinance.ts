@@ -554,6 +554,7 @@ export function useCreateLoan() {
       paylaterAccountId: string;
       sourceAccountId: string;
       monthlyTotal?: number;
+      loanType?: "CASH_LOAN" | "PAYLATER_PURCHASE";
     }) => {
       const res = await fetch("/api/loans", {
         method: "POST",
