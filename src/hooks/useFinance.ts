@@ -553,6 +553,7 @@ export function useCreateLoan() {
       dueDay: number;
       paylaterAccountId: string;
       sourceAccountId: string;
+      disbursementAccountId?: string;
       monthlyTotal?: number;
       loanType?: "CASH_LOAN" | "PAYLATER_PURCHASE";
     }) => {

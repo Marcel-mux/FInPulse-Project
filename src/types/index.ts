@@ -213,6 +213,7 @@ export interface LoanWithRelations {
   lastPaid: string | null;
   paylaterAccountId: string;
   sourceAccountId: string;
+  disbursementAccountId?: string | null;
   createdAt: string;
   updatedAt: string;
   paylaterAccount: {
@@ -228,6 +229,12 @@ export interface LoanWithRelations {
     balance: number;
     type: AccountType;
   };
+  disbursementAccount?: {
+    id: string;
+    name: string;
+    balance: number;
+    type: AccountType;
+  } | null;
   isPaidThisMonth: boolean;
 }
 

@@ -32,6 +32,14 @@ export async function GET(request: NextRequest) {
             type: true,
           },
         },
+        disbursementAccount: {
+          select: {
+            id: true,
+            name: true,
+            balance: true,
+            type: true,
+          },
+        },
       },
       orderBy: [{ status: "asc" }, { dueDay: "asc" }, { createdAt: "desc" }],
     });
@@ -95,7 +103,8 @@ export async function POST(request: NextRequest) {
       tenor,
       dueDay,
       paylaterAccountId,
-      sourceAccountId,
+      sourceAccountId, // Rekening Pembayaran Cicilan
+      disbursementAccountId, // Rekening Pencairan Dana
       monthlyTotal: customMonthlyTotal,
       loanType,
     } = body;
@@ -133,7 +142,7 @@ export async function POST(request: NextRequest) {
 
     if (!paylaterAccountId || !sourceAccountId) {
       return NextResponse.json(
-        { error: "Akun Paylater dan Akun Pencairan/Pembayar wajib dipilih" },
+        { error: "Provider Paylater dan Rekening Pembayaran Cicilan wajib dipilih" },
         { status: 400 }
       );
     }
@@ -146,7 +155,7 @@ export async function POST(request: NextRequest) {
     }
     const monthlyInterest = Math.max(0, monthlyTotal - monthlyPrincipal);
 
-    // Ambil info kedua akun
+    // Ambil info akun paylater dan rekening pembayaran
     const paylaterAcc = await prisma.account.findFirst({
       where: { id: paylaterAccountId, userId },
     });
@@ -163,6 +172,21 @@ export async function POST(request: NextRequest) {
 
     const isPaylaterPurchase = loanType === "PAYLATER_PURCHASE";
 
+    // Untuk Kredit Pinjaman Tunai, ambil rekening pencairan dana
+    let disbursementAcc = null;
+    if (!isPaylaterPurchase) {
+      const targetDisbursementId = disbursementAccountId || sourceAccountId;
+      disbursementAcc = await prisma.account.findFirst({
+        where: { id: targetDisbursementId, userId },
+      });
+      if (!disbursementAcc) {
+        return NextResponse.json(
+          { error: "Rekening pencairan dana tidak valid atau tidak ditemukan" },
+          { status: 404 }
+        );
+      }
+    }
+
     if (paylaterAcc.balance < numTotalAmount) {
       return NextResponse.json(
         {
@@ -176,7 +200,7 @@ export async function POST(request: NextRequest) {
 
     // Eksekusi atomik pencairan pinjaman / cicilan paylater & pembuatan record Loan
     const result = await prisma.$transaction(async (tx) => {
-      // 1. Kurangi limit paylater
+      // 1. Kurangi sisa limit pada provider paylater
       await tx.account.update({
         where: { id: paylaterAcc.id },
         data: {
@@ -184,26 +208,26 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      if (!isPaylaterPurchase) {
-        // Mode Kredit Pinjaman Tunai: Tambah saldo rekening pencairan
+      if (!isPaylaterPurchase && disbursementAcc) {
+        // Mode Kredit Pinjaman Tunai:
+        // a. Tambah saldo pada Rekening Pencairan Dana
         await tx.account.update({
-          where: { id: sourceAcc.id },
+          where: { id: disbursementAcc.id },
           data: {
             balance: { increment: numTotalAmount },
           },
         });
 
-        // Catat transaksi mutasi pencairan pinjaman (transfer)
+        // b. Catat riwayat transaksi pemasukan (INCOME) pencairan pinjaman
         await tx.transaction.create({
           data: {
             userId,
-            type: "transfer",
+            type: "income",
             amount: numTotalAmount,
-            accountId: paylaterAcc.id,
-            toAccountId: sourceAcc.id,
+            accountId: disbursementAcc.id,
             date: new Date(),
-            description: `Pencairan ${name.trim()} (${numTenor} bln)`,
-            tags: "#loan #disbursement #paylater",
+            description: `Pencairan Pinjaman ${name.trim()} (${numTenor} bln)`,
+            tags: "#loan #disbursement #income",
           },
         });
       } else {
@@ -221,7 +245,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      // 4. Simpan entitas Loan baru (jadwal cicilan berkala)
+      // Simpan entitas Loan baru
       const newLoan = await tx.loan.create({
         data: {
           userId,
@@ -235,11 +259,13 @@ export async function POST(request: NextRequest) {
           remainingMonths: numTenor,
           status: "ACTIVE",
           paylaterAccountId: paylaterAcc.id,
-          sourceAccountId: sourceAcc.id,
+          sourceAccountId: sourceAcc.id, // Rekening Pembayaran Cicilan
+          disbursementAccountId: disbursementAcc ? disbursementAcc.id : null, // Rekening Pencairan Dana
         },
         include: {
           paylaterAccount: true,
           sourceAccount: true,
+          disbursementAccount: true,
         },
       });
 

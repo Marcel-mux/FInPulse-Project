@@ -50,6 +50,7 @@ model Account {
   bills            Bill[]
   paylaterLoans    Loan[]        @relation("PaylaterLoans")
   sourceLoans      Loan[]        @relation("SourceLoans")
+  disbursementLoans Loan[]       @relation("DisbursementLoans")
 
   @@map("accounts")
 }
@@ -142,14 +143,16 @@ model Loan {
   remainingMonths   Int       @map("remaining_months")
   status            String    @default("ACTIVE") // "ACTIVE" | "COMPLETED"
   lastPaid          DateTime? @map("last_paid")
-  paylaterAccountId String    @map("paylater_account_id")
-  sourceAccountId   String    @map("source_account_id")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  paylaterAccountId     String    @map("paylater_account_id")
+  sourceAccountId       String    @map("source_account_id")
+  disbursementAccountId String?   @map("disbursement_account_id")
+  createdAt             DateTime  @default(now()) @map("created_at")
+  updatedAt             DateTime  @updatedAt @map("updated_at")
 
-  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  paylaterAccount Account @relation("PaylaterLoans", fields: [paylaterAccountId], references: [id], onDelete: Cascade)
-  sourceAccount   Account @relation("SourceLoans", fields: [sourceAccountId], references: [id], onDelete: Cascade)
+  user                User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  paylaterAccount     Account  @relation("PaylaterLoans", fields: [paylaterAccountId], references: [id], onDelete: Cascade)
+  sourceAccount       Account  @relation("SourceLoans", fields: [sourceAccountId], references: [id], onDelete: Cascade)
+  disbursementAccount Account? @relation("DisbursementLoans", fields: [disbursementAccountId], references: [id], onDelete: SetNull)
 
   @@map("loans")
 }

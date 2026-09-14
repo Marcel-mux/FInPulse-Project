@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import {
+  ArrowDownLeft,
   Calendar,
   CheckCircle2,
   Clock,
@@ -133,6 +134,12 @@ export function LoanCard({ loan }: LoanCardProps) {
       {/* Meta Footer & Action */}
       <div className="flex items-center justify-between text-[11px] pt-1 border-t border-white/[0.06]">
         <div className="flex flex-col gap-0.5">
+          {loan.disbursementAccount && (
+            <span className="text-[10px] text-gray-400 flex items-center gap-1">
+              <ArrowDownLeft className="w-3 h-3 text-emerald-400" />
+              <span>Cair ke: {loan.disbursementAccount.name}</span>
+            </span>
+          )}
           <span className="text-[10px] text-gray-400 flex items-center gap-1">
             <Landmark className="w-3 h-3 text-cyan-400" />
             <span>Potong: {loan.sourceAccount.name}</span>

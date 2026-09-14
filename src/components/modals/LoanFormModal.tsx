@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertCircle,
+  ArrowDownLeft,
   Calendar,
   CreditCard,
   Landmark,
@@ -67,7 +68,8 @@ export function LoanFormModal() {
   const [loanAmount, setLoanAmount] = useState<number>(0);
   const [loanTenor, setLoanTenor] = useState(3);
   const [loanPaylaterAccountId, setLoanPaylaterAccountId] = useState("");
-  const [loanSourceAccountId, setLoanSourceAccountId] = useState("");
+  const [loanDisbursementAccountId, setLoanDisbursementAccountId] = useState("");
+  const [loanPaymentAccountId, setLoanPaymentAccountId] = useState("");
   const [loanMonthlyTotal, setLoanMonthlyTotal] = useState<number>(0);
   const [loanDueDay, setLoanDueDay] = useState("20");
 
@@ -76,7 +78,8 @@ export function LoanFormModal() {
   const defaultSource = regularAccounts[0]?.id || "";
 
   const selectedLoanPaylaterId = loanPaylaterAccountId || defaultPaylater;
-  const selectedLoanSourceId = loanSourceAccountId || defaultSource;
+  const selectedLoanDisbursementId = loanDisbursementAccountId || defaultSource;
+  const selectedLoanPaymentId = loanPaymentAccountId || defaultSource;
 
   const parsedLoanTenor = Math.max(1, loanTenor);
   const calculatedLoanPrincipal =
@@ -144,8 +147,13 @@ export function LoanFormModal() {
       return;
     }
 
-    if (!selectedLoanSourceId) {
-      setError("Pilih rekening bank/dompet untuk pencairan & pembayaran");
+    if (!selectedLoanDisbursementId) {
+      setError("Pilih rekening bank/dompet untuk pencairan dana pinjaman");
+      return;
+    }
+
+    if (!selectedLoanPaymentId) {
+      setError("Pilih rekening bank/dompet untuk pembayaran cicilan");
       return;
     }
 
@@ -162,7 +170,8 @@ export function LoanFormModal() {
         tenor: parsedLoanTenor,
         dueDay: dayNum,
         paylaterAccountId: selectedLoanPaylaterId,
-        sourceAccountId: selectedLoanSourceId,
+        sourceAccountId: selectedLoanPaymentId,
+        disbursementAccountId: selectedLoanDisbursementId,
         monthlyTotal: effectiveLoanMonthlyTotal,
         loanType: "CASH_LOAN",
       });
@@ -177,6 +186,8 @@ export function LoanFormModal() {
       setLoanAmount(0);
       setLoanTenor(3);
       setLoanMonthlyTotal(0);
+      setLoanDisbursementAccountId("");
+      setLoanPaymentAccountId("");
       closeLoanModal();
     } catch (err: unknown) {
       setError(
@@ -352,39 +363,40 @@ export function LoanFormModal() {
                 />
               </div>
 
-              {/* Provider Paylater & Rekening Pencairan */}
+              {/* Provider Paylater */}
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-semibold text-gray-300 flex items-center gap-1">
+                  <CreditCard className="w-3.5 h-3.5 text-orange-400" />
+                  <span>Provider Paylater (Pemberi Pinjaman)</span>
+                </label>
+                <select
+                  value={selectedLoanPaylaterId}
+                  onChange={(e) => setLoanPaylaterAccountId(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl bg-charcoal-900/80 border border-white/10 text-white text-xs focus:outline-none focus:border-orange-500/50 transition-colors"
+                >
+                  {paylaterAccounts.length === 0 ? (
+                    <option value="">Belum ada akun Paylater</option>
+                  ) : (
+                    paylaterAccounts.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} (Sisa: {formatCurrency(p.balance)})
+                      </option>
+                    ))
+                  )}
+                </select>
+              </div>
+
+              {/* Rekening Pencairan & Rekening Pembayaran */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-300 flex items-center gap-1">
-                    <CreditCard className="w-3.5 h-3.5 text-orange-400" />
-                    <span>Provider Paylater</span>
+                  <label className="text-xs font-semibold text-emerald-400 flex items-center gap-1">
+                    <ArrowDownLeft className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Rekening Pencairan Dana</span>
                   </label>
                   <select
-                    value={selectedLoanPaylaterId}
-                    onChange={(e) => setLoanPaylaterAccountId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-charcoal-900/80 border border-white/10 text-white text-xs focus:outline-none focus:border-orange-500/50 transition-colors"
-                  >
-                    {paylaterAccounts.length === 0 ? (
-                      <option value="">Belum ada akun Paylater</option>
-                    ) : (
-                      paylaterAccounts.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name} (Sisa: {formatCurrency(p.balance)})
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </div>
-
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-semibold text-gray-300 flex items-center gap-1">
-                    <Landmark className="w-3.5 h-3.5 text-cyan-400" />
-                    <span>Rekening Pencairan & Bayar</span>
-                  </label>
-                  <select
-                    value={selectedLoanSourceId}
-                    onChange={(e) => setLoanSourceAccountId(e.target.value)}
-                    className="w-full px-3 py-2.5 rounded-xl bg-charcoal-900/80 border border-white/10 text-white text-xs focus:outline-none focus:border-cyan-500/50 transition-colors"
+                    value={selectedLoanDisbursementId}
+                    onChange={(e) => setLoanDisbursementAccountId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-charcoal-900/80 border border-emerald-500/20 text-white text-xs focus:outline-none focus:border-emerald-500/50 transition-colors"
                   >
                     {regularAccounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -392,6 +404,30 @@ export function LoanFormModal() {
                       </option>
                     ))}
                   </select>
+                  <p className="text-[11px] text-gray-400 leading-tight">
+                    Pilih rekening bank/dompet kas tempat uang pinjaman diterima/dicairkan.
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-semibold text-cyan-400 flex items-center gap-1">
+                    <Landmark className="w-3.5 h-3.5 text-cyan-400" />
+                    <span>Rekening Pembayaran Cicilan</span>
+                  </label>
+                  <select
+                    value={selectedLoanPaymentId}
+                    onChange={(e) => setLoanPaymentAccountId(e.target.value)}
+                    className="w-full px-3 py-2.5 rounded-xl bg-charcoal-900/80 border border-cyan-500/20 text-white text-xs focus:outline-none focus:border-cyan-500/50 transition-colors"
+                  >
+                    {regularAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} ({formatCurrency(a.balance)})
+                      </option>
+                    ))}
+                  </select>
+                  <p className="text-[11px] text-gray-400 leading-tight">
+                    Pilih rekening yang akan digunakan untuk membayar angsuran/autodebet setiap bulannya.
+                  </p>
                 </div>
               </div>
 
