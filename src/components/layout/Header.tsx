@@ -15,6 +15,7 @@ import {
   Menu,
   PieChart,
   Receipt,
+  Settings,
   WalletCards,
   X,
 } from "lucide-react";
@@ -38,6 +39,7 @@ export function Header() {
     openBudgetForm,
     openBillForm,
     setTransactionModalOpen,
+    setSettingsOpen,
   } = useAppStore();
 
   const userInitials = session?.user?.name
@@ -219,29 +221,44 @@ export function Header() {
             <span className="absolute top-2 right-2 w-1.5 h-1.5 rounded-full bg-indigo-500 ring-2 ring-charcoal-950" />
           </motion.button>
 
+          {/* Settings Button (Desktop / Tablet) */}
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setSettingsOpen(true)}
+            className="hidden sm:flex relative p-2.5 rounded-xl bg-charcoal-900/80 border border-white/[0.08] text-gray-300 hover:text-white hover:border-white/20 transition-all cursor-pointer"
+            title="Pengaturan & Profil Akun"
+            aria-label="Pengaturan & Profil"
+          >
+            <Settings className="w-4 h-4" />
+          </motion.button>
+
           {/* User Profile & Logout Button */}
           <div className="flex items-center gap-1.5 sm:gap-2 pl-0.5 sm:pl-1">
-            <div
-              className="flex items-center gap-2"
-              title={session?.user?.email || "Akun FinPulse"}
+            <button
+              type="button"
+              onClick={() => setSettingsOpen(true)}
+              className="flex items-center gap-2 p-1 rounded-xl hover:bg-white/[0.06] transition-all cursor-pointer text-left group"
+              title="Klik untuk membuka Pengaturan & Profil"
+              aria-label="Buka Pengaturan & Profil"
             >
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 p-[1px] cursor-default shrink-0"
+                className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 p-[1px] cursor-pointer shrink-0"
               >
-                <div className="w-full h-full rounded-[11px] bg-charcoal-900 flex items-center justify-center font-bold text-[11px] sm:text-xs text-indigo-300">
+                <div className="w-full h-full rounded-[11px] bg-charcoal-900 flex items-center justify-center font-bold text-[11px] sm:text-xs text-indigo-300 group-hover:text-white transition-colors">
                   {userInitials}
                 </div>
               </motion.div>
               <div className="hidden lg:flex flex-col text-left">
-                <span className="text-xs font-bold text-gray-200 truncate max-w-[110px]">
+                <span className="text-xs font-bold text-gray-200 group-hover:text-white transition-colors truncate max-w-[110px]">
                   {session?.user?.name || "Pengguna"}
                 </span>
                 <span className="text-[10px] text-gray-400 truncate max-w-[110px]">
-                  {session?.user?.email || ""}
+                  Pengaturan
                 </span>
               </div>
-            </div>
+            </button>
 
             {/* Logout Button (Desktop / Tablet) */}
             <motion.button
@@ -455,12 +472,33 @@ export function Header() {
                         <Bot className="w-4 h-4 text-emerald-400 shrink-0" />
                         <span>Bot WhatsApp AI</span>
                       </button>
+
+                      {/* Pengaturan & Profil */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          setSettingsOpen(true);
+                        }}
+                        className="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold text-gray-300 hover:bg-white/[0.05] hover:text-white transition-all w-full text-left cursor-pointer"
+                      >
+                        <Settings className="w-4 h-4 text-indigo-400 shrink-0" />
+                        <span>Pengaturan & Profil</span>
+                      </button>
                     </nav>
                   </div>
 
                   {/* Drawer Footer: User Profile & Logout Button */}
                   <div className="pt-4 border-t border-white/[0.08] flex flex-col gap-3">
-                    <div className="flex items-center gap-3 px-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsMobileMenuOpen(false);
+                        setSettingsOpen(true);
+                      }}
+                      className="flex items-center gap-3 px-1 hover:opacity-85 transition-opacity text-left w-full cursor-pointer"
+                      title="Klik untuk membuka Pengaturan & Profil"
+                    >
                       <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 p-[1px] shrink-0">
                         <div className="w-full h-full rounded-[11px] bg-charcoal-900 flex items-center justify-center font-bold text-xs text-indigo-300">
                           {userInitials}
@@ -471,10 +509,10 @@ export function Header() {
                           {session?.user?.name || "Pengguna FinPulse"}
                         </span>
                         <span className="text-[10px] text-gray-400 truncate">
-                          {session?.user?.email || ""}
+                          {session?.user?.email || "Pengaturan Akun"}
                         </span>
                       </div>
-                    </div>
+                    </button>
 
                     <button
                       type="button"

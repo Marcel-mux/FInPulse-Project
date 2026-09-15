@@ -41,6 +41,9 @@ interface AppState {
   // WhatsApp bot integration modal
   isWhatsAppModalOpen: boolean;
 
+  // Settings & Profile modal
+  isSettingsOpen: boolean;
+
   // Paylater management modal
   isPaylaterModalOpen: boolean;
   editingPaylaterAccount: Account | null;
@@ -83,6 +86,7 @@ interface AppState {
 
   setExportModalOpen: (open: boolean) => void;
   setWhatsAppModalOpen: (open: boolean) => void;
+  setSettingsOpen: (open: boolean) => void;
 }
 
 export const useAppStore = create<AppState>((set) => ({
@@ -183,4 +187,6 @@ export const useAppStore = create<AppState>((set) => ({
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
   setWhatsAppModalOpen: (open) => set({ isWhatsAppModalOpen: open }),
+  isSettingsOpen: false,
+  setSettingsOpen: (open) => set({ isSettingsOpen: open }),
 }));

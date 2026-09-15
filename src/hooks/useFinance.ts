@@ -619,6 +619,28 @@ export function useDeleteLoan() {
   });
 }
 
+export function useResetAllData() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (confirmation: string) => {
+      const res = await fetch("/api/user/reset-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ confirmation }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || "Gagal mereset data keuangan");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      // Invalidate all cached data to refresh accounts, transactions, budgets, bills, loans, etc.
+      queryClient.invalidateQueries();
+    },
+  });
+}
+
 
 
 
