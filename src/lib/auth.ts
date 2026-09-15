@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import GoogleProvider from "next-auth/providers/google";
 import { prisma } from "@/lib/prisma";
+import { bootstrapUserData } from "@/lib/userBootstrap";
 import bcryptjs from "bcryptjs";
 
 export const authOptions: NextAuthOptions = {
@@ -64,20 +65,75 @@ export const authOptions: NextAuthOptions = {
         }
       },
     }),
-    ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
-      ? [
-          GoogleProvider({
-            clientId: process.env.GOOGLE_CLIENT_ID,
-            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-          }),
-        ]
-      : []),
+    GoogleProvider({
+      clientId: process.env.GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+    }),
   ],
   callbacks: {
-    async jwt({ token, user }) {
+    async signIn({ user, account }) {
+      if (account?.provider === "google") {
+        try {
+          if (!user.email) {
+            console.warn("[AUTH-GOOGLE] Gagal login: Email Google tidak ditemukan");
+            return false;
+          }
+
+          const normalizedEmail = user.email.toLowerCase().trim();
+          console.log(`[AUTH-GOOGLE] Memeriksa akun di database untuk: ${normalizedEmail}`);
+
+          let dbUser = await prisma.user.findUnique({
+            where: { email: normalizedEmail },
+          });
+
+          if (!dbUser) {
+            console.log(`[AUTH-GOOGLE] Pengguna pertama kali login via Google. Mendaftarkan ke database...`);
+            dbUser = await prisma.user.create({
+              data: {
+                name: user.name || "Pengguna FinPulse",
+                email: normalizedEmail,
+                passwordHash: "OAUTH_GOOGLE",
+              },
+            });
+            console.log(`[AUTH-GOOGLE] Pengguna baru berhasil dibuat dengan ID: ${dbUser.id}`);
+
+            // Inisialisasi Kas Tunai dan kategori default
+            try {
+              await bootstrapUserData(dbUser.id);
+              console.log(`[AUTH-GOOGLE] Inisialisasi dompet Kas Tunai & kategori standar berhasil untuk user ${dbUser.id}`);
+            } catch (bootErr) {
+              console.error("[AUTH-GOOGLE] Gagal bootstrap data user:", bootErr);
+            }
+          } else {
+            console.log(`[AUTH-GOOGLE] Akun sudah terdaftar (ID: ${dbUser.id}). Menautkan login Google.`);
+          }
+
+          // Mutasikan user.id agar callback jwt dan session langsung menerima ID user Prisma
+          user.id = dbUser.id;
+          return true;
+        } catch (error) {
+          console.error("[AUTH-GOOGLE] Terjadi error saat signIn callback:", error);
+          return false;
+        }
+      }
+
+      return true;
+    },
+    async jwt({ token, user, account }) {
       try {
         if (user) {
           token.id = user.id;
+        }
+
+        // Pastikan token.id selalu mengambil user.id dari database Prisma
+        if (token.email && (!token.id || account?.provider === "google")) {
+          const dbUser = await prisma.user.findUnique({
+            where: { email: (token.email as string).toLowerCase().trim() },
+            select: { id: true },
+          });
+          if (dbUser) {
+            token.id = dbUser.id;
+          }
         }
       } catch (err) {
         console.error("[AUTH] Error pada jwt callback:", err);

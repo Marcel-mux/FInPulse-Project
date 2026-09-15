@@ -6,6 +6,11 @@ const authMiddleware = withAuth(
     const { pathname } = req.nextUrl;
     const token = req.nextauth.token;
 
+    // Jika user mengakses /dashboard, arahkan ke halaman utama dashboard (/)
+    if (pathname === "/dashboard") {
+      return NextResponse.redirect(new URL("/", req.url));
+    }
+
     // Jika user sudah login dan mencoba mengakses /login atau /register, redirect ke dashboard (/)
     if (token && (pathname === "/login" || pathname === "/register")) {
       return NextResponse.redirect(new URL("/", req.url));
