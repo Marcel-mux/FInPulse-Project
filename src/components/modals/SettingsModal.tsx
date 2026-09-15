@@ -6,8 +6,11 @@ import { useSession } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   AlertCircle,
+  AlertOctagon,
   AlertTriangle,
   Bot,
+  CalendarDays,
+  CalendarRange,
   CheckCircle2,
   Loader2,
   RotateCcw,
@@ -27,6 +30,14 @@ export function SettingsModal() {
 
   // State untuk modal konfirmasi reset
   const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+  const [scope, setScope] = useState<"DAILY" | "MONTHLY" | "ALL">("DAILY");
+
+  // Default tanggal hari ini (YYYY-MM-DD) dan bulan ini (YYYY-MM)
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const currentMonthStr = new Date().toISOString().slice(0, 7);
+
+  const [selectedDate, setSelectedDate] = useState<string>(todayStr);
+  const [selectedMonth, setSelectedMonth] = useState<string>(currentMonthStr);
   const [confirmationText, setConfirmationText] = useState("");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -57,19 +68,26 @@ export function SettingsModal() {
     setErrorMessage(null);
 
     try {
-      await resetAllDataMutation.mutateAsync("reset");
+      const res = await resetAllDataMutation.mutateAsync({
+        confirmation: "reset",
+        scope,
+        date: selectedDate,
+        monthYear: selectedMonth,
+      });
 
-      setSuccessMessage("Seluruh data keuangan berhasil direset ke awal.");
+      setSuccessMessage(
+        res.message || "Seluruh data yang dipilih berhasil direset."
+      );
       setIsConfirmOpen(false);
       setConfirmationText("");
 
       // Refresh data server & UI
       router.refresh();
 
-      // Auto dismiss success toast after 4s
+      // Auto dismiss success toast after 5s
       setTimeout(() => {
         setSuccessMessage(null);
-      }, 4000);
+      }, 5000);
     } catch (err: unknown) {
       setErrorMessage(
         err instanceof Error
@@ -99,7 +117,7 @@ export function SettingsModal() {
                 className="p-3.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs flex items-center gap-2.5 shadow-glow-emerald"
               >
                 <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />
-                <span className="font-semibold">{successMessage}</span>
+                <span className="font-semibold leading-relaxed">{successMessage}</span>
               </motion.div>
             )}
           </AnimatePresence>
@@ -176,12 +194,10 @@ export function SettingsModal() {
                   </h3>
                 </div>
                 <p className="text-xs text-gray-300 font-medium leading-relaxed">
-                  Reset Semua Data Keuangan
+                  Reset Data Keuangan Berdasarkan Cakupan
                 </p>
                 <p className="text-[11px] text-gray-400 leading-relaxed mt-0.5">
-                  Menghapus riwayat transaksi, tagihan bulanan, catatan cicilan,
-                  anggaran, mengosongkan saldo kas/bank menjadi Rp 0, serta
-                  memulihkan plafon Paylater Anda.
+                  Mendukung reset transaksi harian, bulanan, atau total reset seluruh catatan keuangan dengan proteksi konfirmasi ketik &apos;reset&apos;.
                 </p>
               </div>
             </div>
@@ -207,13 +223,13 @@ export function SettingsModal() {
       {/* Sub-Modal Konfirmasi Proteksi (Ketik "reset") */}
       <AnimatePresence>
         {isConfirmOpen && (
-          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/70 backdrop-blur-md">
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-md overflow-y-auto">
             <motion.div
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}
               transition={{ duration: 0.2 }}
-              className="w-full max-w-md bg-charcoal-900 border border-crimson-500/30 rounded-2xl shadow-2xl p-5 sm:p-6 flex flex-col gap-4 relative overflow-hidden"
+              className="w-full max-w-lg bg-charcoal-900 border border-crimson-500/30 rounded-2xl shadow-2xl p-5 sm:p-6 flex flex-col gap-4 relative overflow-hidden my-auto"
             >
               {/* Header */}
               <div className="flex items-start justify-between gap-3">
@@ -226,7 +242,7 @@ export function SettingsModal() {
                       Hapus Riwayat & Reset Saldo?
                     </h3>
                     <p className="text-[11px] text-gray-400">
-                      Konfirmasi tindakan permanen
+                      Pilih cakupan reset dan konfirmasi tindakan
                     </p>
                   </div>
                 </div>
@@ -240,17 +256,162 @@ export function SettingsModal() {
                     }
                   }}
                   disabled={resetAllDataMutation.isPending}
-                  className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors"
+                  className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/[0.06] transition-colors cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Warning Notice */}
+              {/* Scope Selector: 3 Pilihan Cakupan Reset */}
+              <div className="flex flex-col gap-2.5">
+                <label className="text-xs font-semibold text-gray-300">
+                  Pilih Cakupan (Scope) Reset:
+                </label>
+
+                {/* Option 1: Hari Ini / Hari Tertentu */}
+                <div
+                  onClick={() => setScope("DAILY")}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    scope === "DAILY"
+                      ? "bg-amber-500/10 border-amber-500/40 text-white"
+                      : "bg-charcoal-950/60 border-white/[0.08] text-gray-400 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="resetScope"
+                      checked={scope === "DAILY"}
+                      onChange={() => setScope("DAILY")}
+                      className="mt-1 accent-amber-500 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <CalendarDays className="w-3.5 h-3.5 text-amber-400" />
+                        <span className="text-xs font-bold text-white">
+                          Hari Ini / Hari Tertentu (Harian)
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Menghapus transaksi pada tanggal yang dipilih dan memulihkan saldo akun ke kondisi sebelum transaksi terjadi.
+                      </p>
+
+                      {scope === "DAILY" && (
+                        <div
+                          className="mt-2.5 pt-2.5 border-t border-white/[0.08] flex items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <label className="text-[11px] text-gray-300 font-medium">
+                            Pilih Tanggal:
+                          </label>
+                          <input
+                            type="date"
+                            value={selectedDate}
+                            onChange={(e) => setSelectedDate(e.target.value)}
+                            className="px-2.5 py-1.5 rounded-lg bg-charcoal-900 border border-amber-500/30 text-white text-xs focus:outline-none focus:border-amber-400"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option 2: Bulan Ini / Bulan Tertentu */}
+                <div
+                  onClick={() => setScope("MONTHLY")}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    scope === "MONTHLY"
+                      ? "bg-indigo-500/10 border-indigo-500/40 text-white"
+                      : "bg-charcoal-950/60 border-white/[0.08] text-gray-400 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="resetScope"
+                      checked={scope === "MONTHLY"}
+                      onChange={() => setScope("MONTHLY")}
+                      className="mt-1 accent-indigo-500 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5">
+                        <CalendarRange className="w-3.5 h-3.5 text-indigo-400" />
+                        <span className="text-xs font-bold text-white">
+                          Bulan Ini / Bulan Tertentu (Bulanan)
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-0.5">
+                        Menghapus seluruh transaksi dan anggaran pada bulan yang dipilih serta memulihkan saldo rekening.
+                      </p>
+
+                      {scope === "MONTHLY" && (
+                        <div
+                          className="mt-2.5 pt-2.5 border-t border-white/[0.08] flex items-center gap-2"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <label className="text-[11px] text-gray-300 font-medium">
+                            Pilih Bulan:
+                          </label>
+                          <input
+                            type="month"
+                            value={selectedMonth}
+                            onChange={(e) => setSelectedMonth(e.target.value)}
+                            className="px-2.5 py-1.5 rounded-lg bg-charcoal-900 border border-indigo-500/30 text-white text-xs focus:outline-none focus:border-indigo-400"
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Option 3: Reset Semua (Total Reset) */}
+                <div
+                  onClick={() => setScope("ALL")}
+                  className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                    scope === "ALL"
+                      ? "bg-crimson-500/15 border-crimson-500/50 text-white"
+                      : "bg-charcoal-950/60 border-white/[0.08] text-gray-400 hover:border-white/20"
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <input
+                      type="radio"
+                      name="resetScope"
+                      checked={scope === "ALL"}
+                      onChange={() => setScope("ALL")}
+                      className="mt-1 accent-crimson-500 cursor-pointer"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1.5">
+                          <AlertOctagon className="w-3.5 h-3.5 text-crimson-400" />
+                          <span className="text-xs font-bold text-white">
+                            Reset Semua (Total Reset)
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-crimson-500/20 text-crimson-400 border border-crimson-500/30">
+                          Menghapus seluruh riwayat, pinjaman, tagihan & mengosongkan saldo
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-1">
+                        Mengosongkan saldo seluruh akun kas/bank ke Rp 0, memulihkan limit Paylater ke plafon awal, serta menghapus seluruh transaksi, tagihan, cicilan, dan anggaran.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Warning Notice Box */}
               <div className="p-3 rounded-xl bg-crimson-500/10 border border-crimson-500/25 flex items-start gap-2.5 text-xs text-crimson-300">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-crimson-400" />
                 <p className="leading-relaxed">
-                  <strong className="font-semibold">Tindakan ini tidak dapat dibatalkan.</strong> Semua transaksi, saldo rekening, tagihan, dan pinjaman Anda akan dikosongkan.
+                  <strong className="font-semibold">Peringatan:</strong>{" "}
+                  {scope === "ALL" &&
+                    "Tindakan ini tidak dapat dibatalkan. Semua transaksi, saldo rekening, tagihan, dan pinjaman Anda akan dikosongkan."}
+                  {scope === "DAILY" &&
+                    `Mutasi transaksi pada tanggal ${selectedDate} akan dihapus dan dampaknya pada saldo rekening/paylater akan dibatalkan/dipulihkan.`}
+                  {scope === "MONTHLY" &&
+                    `Seluruh transaksi dan anggaran pada bulan ${selectedMonth} akan dihapus dan dampaknya pada saldo rekening/paylater akan dibatalkan/dipulihkan.`}
                 </p>
               </div>
 
@@ -266,7 +427,7 @@ export function SettingsModal() {
               <form onSubmit={handleExecuteReset} className="flex flex-col gap-3.5">
                 <div className="flex flex-col gap-1.5">
                   <label className="text-xs font-semibold text-gray-300">
-                    Ketik <span className="font-mono text-crimson-400 uppercase font-bold tracking-wider">reset</span> untuk melanjutkan:
+                    Ketik kata <span className="font-mono text-crimson-400 uppercase font-bold tracking-wider">&apos;reset&apos;</span> untuk mengonfirmasi:
                   </label>
                   <input
                     type="text"
@@ -306,8 +467,8 @@ export function SettingsModal() {
                       </>
                     ) : (
                       <>
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Reset Data Sekarang</span>
+                        <RotateCcw className="w-3.5 h-3.5" />
+                        <span>Jalankan Reset</span>
                       </>
                     )}
                   </button>

@@ -619,14 +619,26 @@ export function useDeleteLoan() {
   });
 }
 
+export interface ResetDataPayload {
+  confirmation: string;
+  scope: "ALL" | "MONTHLY" | "DAILY";
+  date?: string;
+  monthYear?: string;
+}
+
 export function useResetAllData() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (confirmation: string) => {
+    mutationFn: async (payload: ResetDataPayload | string) => {
+      const body =
+        typeof payload === "string"
+          ? { confirmation: payload, scope: "ALL" }
+          : payload;
+
       const res = await fetch("/api/user/reset-data", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ confirmation }),
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
