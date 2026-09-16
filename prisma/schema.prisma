@@ -18,6 +18,7 @@ model User {
   email        String   @unique
   passwordHash   String   @map("password_hash")
   whatsappNumber String?  @unique @map("whatsapp_number")
+  lastSeenVersion String   @default("") @map("last_seen_version")
   createdAt      DateTime @default(now()) @map("created_at")
 
   accounts     Account[]
@@ -157,3 +158,12 @@ model Loan {
   @@map("loans")
 }
 
+model AppRelease {
+  id         String   @id @default(cuid())
+  version    String   @unique
+  title      String
+  notes      String
+  releasedAt DateTime @default(now()) @map("released_at")
+
+  @@map("app_releases")
+}

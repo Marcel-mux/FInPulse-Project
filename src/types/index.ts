@@ -245,4 +245,18 @@ export interface LoansResponse {
   activeLoansCount: number;
 }
 
+export interface AppRelease {
+  id: string;
+  version: string;
+  title: string;
+  notes: string;
+  releasedAt: string;
+}
+
+export interface AppReleaseResponse {
+  release: AppRelease | null;
+  shouldShow: boolean;
+  lastSeenVersion: string;
+}
+
 

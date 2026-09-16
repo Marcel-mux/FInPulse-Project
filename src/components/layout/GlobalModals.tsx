@@ -15,6 +15,7 @@ import { LoanFormModal } from "@/components/modals/LoanFormModal";
 import { ExportModal } from "@/components/modals/ExportModal";
 import { WhatsAppIntegrationModal } from "@/components/modals/WhatsAppIntegrationModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
+import { WhatsNewModal } from "@/components/modals/WhatsNewModal";
 import { PrintableReport } from "@/components/export/PrintableReport";
 import { useAccounts, useRecentTransactions } from "@/hooks/useFinance";
 import { AnalyticsSummary, TransactionWithRelations } from "@/types";
@@ -65,6 +66,7 @@ export function GlobalModals() {
       <ExportModal />
       <WhatsAppIntegrationModal />
       <SettingsModal />
+      <WhatsNewModal />
 
       {/* Hidden printable report (A4 vector output) */}
       <PrintableReport

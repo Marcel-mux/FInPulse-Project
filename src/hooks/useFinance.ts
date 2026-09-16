@@ -7,6 +7,7 @@ import {
   Category,
   LoansResponse,
   TransactionWithRelations,
+  AppReleaseResponse,
 } from "@/types";
 
 // ========================
@@ -656,6 +657,40 @@ export function useResetAllData() {
       queryClient.invalidateQueries({ queryKey: ["budgets"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });
       queryClient.invalidateQueries();
+    },
+  });
+}
+
+export function useAppRelease() {
+  return useQuery<AppReleaseResponse>({
+    queryKey: ["app-release"],
+    queryFn: async () => {
+      const res = await fetch("/api/app-release");
+      if (!res.ok) {
+        throw new Error("Gagal memeriksa versi aplikasi");
+      }
+      return res.json();
+    },
+    staleTime: 1000 * 60 * 15, // 15 menit
+  });
+}
+
+export function useAcknowledgeRelease() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (version: string) => {
+      const res = await fetch("/api/app-release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ version }),
+      });
+      if (!res.ok) {
+        throw new Error("Gagal mengonfirmasi versi aplikasi");
+      }
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["app-release"] });
     },
   });
 }
