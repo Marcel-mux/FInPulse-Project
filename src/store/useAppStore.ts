@@ -1,5 +1,11 @@
 import { create } from "zustand";
-import { Account, BillWithRelations, BudgetWithCategory, Category } from "@/types";
+import {
+  Account,
+  BillWithRelations,
+  BudgetWithCategory,
+  Category,
+  LoanWithRelations,
+} from "@/types";
 
 export type TransactionType = "income" | "expense" | "transfer";
 
@@ -52,6 +58,10 @@ interface AppState {
   isLoanModalOpen: boolean;
   loanModalTab: "loan" | "paylater";
 
+  // Pay loan modal
+  isPayLoanModalOpen: boolean;
+  payingLoan: LoanWithRelations | null;
+
   // Actions
   setTransactionModalOpen: (open: boolean, defaultType?: TransactionType) => void;
   setActiveTransactionType: (type: TransactionType) => void;
@@ -83,6 +93,9 @@ interface AppState {
   openLoanModal: (tab?: "loan" | "paylater") => void;
   closeLoanModal: () => void;
   setLoanModalTab: (tab: "loan" | "paylater") => void;
+
+  openPayLoanModal: (loan: LoanWithRelations) => void;
+  closePayLoanModal: () => void;
 
   setExportModalOpen: (open: boolean) => void;
   setWhatsAppModalOpen: (open: boolean) => void;
@@ -184,6 +197,19 @@ export const useAppStore = create<AppState>((set) => ({
       isLoanModalOpen: false,
     }),
   setLoanModalTab: (tab) => set({ loanModalTab: tab }),
+
+  isPayLoanModalOpen: false,
+  payingLoan: null,
+  openPayLoanModal: (loan) =>
+    set({
+      isPayLoanModalOpen: true,
+      payingLoan: loan,
+    }),
+  closePayLoanModal: () =>
+    set({
+      isPayLoanModalOpen: false,
+      payingLoan: null,
+    }),
 
   setExportModalOpen: (open) => set({ isExportModalOpen: open }),
   setWhatsAppModalOpen: (open) => set({ isWhatsAppModalOpen: open }),

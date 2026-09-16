@@ -579,15 +579,32 @@ export function useCreateLoan() {
   });
 }
 
+export interface PayLoanPayload {
+  id: string;
+  sourceAccountId?: string;
+  amount?: number;
+}
+
 export function usePayLoan() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const res = await fetch(`/api/loans/${id}/pay`, {
+    mutationFn: async (payload: PayLoanPayload | string) => {
+      const loanId = typeof payload === "string" ? payload : payload.id;
+      const body =
+        typeof payload === "string"
+          ? {}
+          : {
+              sourceAccountId: payload.sourceAccountId,
+              amount: payload.amount,
+            };
+
+      const res = await fetch(`/api/loans/${loanId}/pay`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
       });
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         throw new Error(err.error || "Gagal membayar cicilan pinjaman");
       }
       return res.json();

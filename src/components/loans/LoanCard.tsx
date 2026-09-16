@@ -13,14 +13,15 @@ import {
 import { motion } from "framer-motion";
 import { LoanWithRelations } from "@/types";
 import { formatCurrency } from "@/lib/formatters";
-import { useDeleteLoan, usePayLoan } from "@/hooks/useFinance";
+import { useDeleteLoan } from "@/hooks/useFinance";
+import { useAppStore } from "@/store/useAppStore";
 
 interface LoanCardProps {
   loan: LoanWithRelations;
 }
 
 export function LoanCard({ loan }: LoanCardProps) {
-  const payLoanMutation = usePayLoan();
+  const { openPayLoanModal } = useAppStore();
   const deleteLoanMutation = useDeleteLoan();
   const [showConfirmDelete, setShowConfirmDelete] = useState(false);
 
@@ -30,15 +31,6 @@ export function LoanCard({ loan }: LoanCardProps) {
     100,
     Math.round(((loan.tenor - loan.remainingMonths) / loan.tenor) * 100)
   );
-
-  const handlePay = async () => {
-    if (payLoanMutation.isPending || isCompleted) return;
-    try {
-      await payLoanMutation.mutateAsync(loan.id);
-    } catch (err) {
-      console.error(err);
-    }
-  };
 
   const handleDelete = async () => {
     try {
@@ -181,18 +173,27 @@ export function LoanCard({ loan }: LoanCardProps) {
 
           {!isCompleted && (
             loan.isPaidThisMonth ? (
-              <span className="px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-1">
-                <CheckCircle2 className="w-3.5 h-3.5" />
-                <span>Bulan Ini Lunas</span>
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="px-2.5 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-bold flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  <span>Bulan Ini Lunas</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => openPayLoanModal(loan)}
+                  className="px-2.5 py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-gray-300 text-xs font-semibold transition-all cursor-pointer"
+                  title="Bayar cicilan berikutnya lebih awal"
+                >
+                  Lunasi
+                </button>
+              </div>
             ) : (
               <button
                 type="button"
-                onClick={handlePay}
-                disabled={payLoanMutation.isPending}
-                className="px-3 py-1.5 rounded-xl bg-orange-500 hover:bg-orange-400 text-charcoal-950 text-xs font-bold transition-all shadow-md shadow-orange-500/20 disabled:opacity-50 cursor-pointer"
+                onClick={() => openPayLoanModal(loan)}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-charcoal-950 text-xs font-bold transition-all shadow-md shadow-orange-500/20 active:scale-[0.98] cursor-pointer"
               >
-                {payLoanMutation.isPending ? "Membayar..." : `Bayar ${formatCurrency(loan.monthlyTotal)}`}
+                Bayar Tagihan
               </button>
             )
           )}

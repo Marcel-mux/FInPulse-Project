@@ -25,7 +25,7 @@ export async function POST(
 
     if (!loan) {
       return NextResponse.json(
-        { error: "Data pinjaman tidak ditemukan" },
+        { error: "Data pinjaman / cicilan tidak ditemukan" },
         { status: 404 }
       );
     }
@@ -37,33 +37,35 @@ export async function POST(
       );
     }
 
-    if (
-      loan.sourceAccount.type !== "credit" &&
-      loan.sourceAccount.balance < loan.monthlyTotal
-    ) {
-      return NextResponse.json(
-        {
-          error: `Saldo rekening ${loan.sourceAccount.name} tidak mencukupi untuk bayar cicilan.`,
-        },
-        { status: 400 }
-      );
-    }
+    // Ambil payload opsional: { sourceAccountId, amount }
+    const body = await request.json().catch(() => ({}));
+    const sourceAccountId = typeof body?.sourceAccountId === "string" ? body.sourceAccountId : undefined;
+    const amount = typeof body?.amount === "number" && body.amount > 0 ? body.amount : undefined;
 
     const result = await payLoanInstallment(loan.id, {
+      sourceAccountId,
+      amount,
       sendWaNotification: true,
     });
 
     return NextResponse.json({
       success: true,
-      message: "Cicilan berhasil dibayar",
+      message: "Cicilan berhasil dibayar! Limit paylater Anda telah dipulihkan.",
       loan: result.updatedLoan,
       account: result.updatedSource,
       paylater: result.updatedPaylater,
+      transaction: result.expenseTx,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("[PAY LOAN MANUAL ERROR]", error);
     const msg =
       error instanceof Error ? error.message : "Gagal membayar cicilan";
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const status =
+      msg.includes("tidak mencukupi") ||
+      msg.includes("sudah berstatus LUNAS") ||
+      msg.includes("tidak valid")
+        ? 400
+        : 500;
+    return NextResponse.json({ error: msg }, { status });
   }
 }

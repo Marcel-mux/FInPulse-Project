@@ -3,6 +3,8 @@ import { formatCurrency } from "@/lib/formatters";
 import { sendWhatsAppMessage } from "@/lib/fonnte";
 
 export interface PayLoanOptions {
+  sourceAccountId?: string;
+  amount?: number;
   sendWaNotification?: boolean;
 }
 
@@ -34,15 +36,31 @@ export async function payLoanInstallment(
     throw new Error(`Pinjaman "${loan.name}" sudah berstatus LUNAS (COMPLETED).`);
   }
 
-  // 2. Validasi kecukupan saldo rekening pembayar
-  if (
-    loan.sourceAccount.type !== "credit" &&
-    loan.sourceAccount.balance < loan.monthlyTotal
-  ) {
+  // 2. Tentukan rekening pembayar & nominal pembayaran
+  let sourceAccount = loan.sourceAccount;
+  if (options.sourceAccountId && options.sourceAccountId !== loan.sourceAccountId) {
+    const customSource = await prisma.account.findFirst({
+      where: {
+        id: options.sourceAccountId,
+        userId: loan.userId,
+      },
+    });
+
+    if (!customSource) {
+      throw new Error("Rekening pembayar yang dipilih tidak valid.");
+    }
+    sourceAccount = customSource;
+  }
+
+  const payAmount =
+    options.amount && options.amount > 0 ? options.amount : loan.monthlyTotal;
+
+  // 3. Validasi kecukupan saldo rekening pembayar
+  if (sourceAccount.type !== "credit" && sourceAccount.balance < payAmount) {
     throw new Error(
-      `Saldo rekening ${loan.sourceAccount.name} tidak mencukupi untuk bayar cicilan ${formatCurrency(
-        loan.monthlyTotal
-      )}. Saldo saat ini: ${formatCurrency(loan.sourceAccount.balance)}`
+      `Saldo rekening ${sourceAccount.name} tidak mencukupi untuk bayar cicilan ${formatCurrency(
+        payAmount
+      )}. Saldo saat ini: ${formatCurrency(sourceAccount.balance)}`
     );
   }
 
@@ -50,25 +68,31 @@ export async function payLoanInstallment(
   const newRemaining = Math.max(0, loan.remainingMonths - 1);
   const isCompleted = newRemaining === 0;
 
-  // 3. Eksekusi transaksi atomik via Prisma $transaction
+  // 4. Eksekusi transaksi atomik via Prisma $transaction
   const result = await prisma.$transaction(async (tx) => {
-    // a. Potong saldo rekening pembayar (sourceAccountId) sebesar monthlyTotal
+    // a. Potong saldo rekening pembayar sebesar payAmount
     const updatedSource = await tx.account.update({
-      where: { id: loan.sourceAccountId },
+      where: { id: sourceAccount.id },
       data: {
         balance: {
-          decrement: loan.monthlyTotal,
+          decrement: payAmount,
         },
       },
     });
 
-    // b. Pulihkan/tambah kembali sisa limit pada paylaterAccountId sebesar monthlyPrincipal
+    // b. Pulihkan/tambah kembali sisa limit pada paylaterAccountId sebesar porsi pokok
+    const principalPortion =
+      loan.monthlyInterest > 0
+        ? Math.min(loan.monthlyPrincipal, payAmount)
+        : payAmount;
+
     const maxLimit =
       loan.paylaterAccount.creditLimit ??
-      loan.paylaterAccount.balance + loan.monthlyPrincipal;
+      loan.paylaterAccount.balance + principalPortion;
+
     const newPaylaterBalance = Math.min(
       maxLimit,
-      loan.paylaterAccount.balance + loan.monthlyPrincipal
+      loan.paylaterAccount.balance + principalPortion
     );
 
     const updatedPaylater = await tx.account.update({
@@ -78,44 +102,42 @@ export async function payLoanInstallment(
       },
     });
 
-    // c. Pastikan kategori "Bunga / Biaya Pinjaman" tersedia
-    let interestCategory = await tx.category.findFirst({
+    // c. Pastikan kategori pengeluaran tersedia
+    let category = await tx.category.findFirst({
       where: {
         userId: loan.userId,
-        name: { in: ["Bunga / Biaya Pinjaman", "Bunga Pinjaman", "Biaya Pinjaman"] },
+        name: {
+          in: [
+            "Tagihan & Utilitas",
+            "Cicilan & Pinjaman",
+            "Pelunasan Paylater",
+            "Bunga / Biaya Pinjaman",
+          ],
+        },
         type: "expense",
       },
     });
 
-    if (!interestCategory) {
-      interestCategory = await tx.category.create({
-        data: {
-          userId: loan.userId,
-          name: "Bunga / Biaya Pinjaman",
-          type: "expense",
-          icon: "Percent",
-          colorHex: "#EF4444",
-        },
+    if (!category) {
+      category = await tx.category.findFirst({
+        where: { userId: loan.userId, type: "expense" },
       });
     }
 
-    // d. Catat transaksi EXPENSE sebesar monthlyInterest
-    let expenseTx = null;
-    if (loan.monthlyInterest > 0) {
-      expenseTx = await tx.transaction.create({
-        data: {
-          userId: loan.userId,
-          type: "expense",
-          amount: loan.monthlyInterest,
-          accountId: loan.sourceAccountId,
-          categoryId: interestCategory.id,
-          date: new Date(),
-          description: `Bunga Cicilan ${loan.name} (${currentInstallmentNumber}/${loan.tenor})`,
-          tags: "#whatsapp #loan #interest",
-          isRecurring: true,
-        },
-      });
-    }
+    // d. Catat mutasi EXPENSE pada rekening pembayar
+    const expenseTx = await tx.transaction.create({
+      data: {
+        userId: loan.userId,
+        type: "expense",
+        amount: payAmount,
+        accountId: sourceAccount.id,
+        categoryId: category?.id || null,
+        date: new Date(),
+        description: `Pelunasan Tagihan Paylater: ${loan.name} via ${sourceAccount.name}`,
+        tags: "#loan #paylater #payment",
+        isRecurring: true,
+      },
+    });
 
     // e. Kurangi remainingMonths sebanyak 1 dan update status jika lunas
     const updatedLoan = await tx.loan.update({
@@ -124,6 +146,7 @@ export async function payLoanInstallment(
         remainingMonths: newRemaining,
         status: isCompleted ? "COMPLETED" : "ACTIVE",
         lastPaid: new Date(),
+        sourceAccountId: sourceAccount.id,
       },
     });
 
@@ -135,18 +158,24 @@ export async function payLoanInstallment(
     };
   });
 
-  // 4. Kirim notifikasi WhatsApp jika diminta dan nomor WhatsApp tersedia
+  // 5. Kirim notifikasi WhatsApp jika diminta dan nomor WhatsApp tersedia
   if (options.sendWaNotification && loan.user?.whatsappNumber) {
     const waMessage =
       `💳 *Pembayaran Cicilan Berhasil!*\n\n` +
       `Pembayaran cicilan bulanan Anda telah berhasil diproses:\n\n` +
       `• *Pinjaman*: ${loan.name}\n` +
       `• *Cicilan Ke*: ${currentInstallmentNumber} dari ${loan.tenor} bulan\n` +
-      `• *Total Dibayar*: ${formatCurrency(loan.monthlyTotal)}\n` +
-      `  - Pokok Limit Dipulihkan: ${formatCurrency(loan.monthlyPrincipal)}\n` +
-      `  - Beban Bunga Pinjaman: ${formatCurrency(loan.monthlyInterest)}\n` +
-      `• *Rekening Pembayar*: ${loan.sourceAccount.name}\n` +
-      `• *Sisa Saldo ${loan.sourceAccount.name}*: ${formatCurrency(
+      `• *Total Dibayar*: ${formatCurrency(payAmount)}\n` +
+      `  - Pokok Limit Dipulihkan: ${formatCurrency(
+        loan.monthlyInterest > 0
+          ? Math.min(loan.monthlyPrincipal, payAmount)
+          : payAmount
+      )}\n` +
+      (loan.monthlyInterest > 0
+        ? `  - Beban Bunga Pinjaman: ${formatCurrency(loan.monthlyInterest)}\n`
+        : "") +
+      `• *Rekening Pembayar*: ${sourceAccount.name}\n` +
+      `• *Sisa Saldo ${sourceAccount.name}*: ${formatCurrency(
         result.updatedSource.balance
       )}\n` +
       `• *Sisa Limit ${loan.paylaterAccount.name}*: ${formatCurrency(

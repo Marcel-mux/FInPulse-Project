@@ -12,6 +12,7 @@ import { BudgetFormModal } from "@/components/modals/BudgetFormModal";
 import { BillFormModal } from "@/components/modals/BillFormModal";
 import { PaylaterModal } from "@/components/modals/PaylaterModal";
 import { LoanFormModal } from "@/components/modals/LoanFormModal";
+import { PayLoanModal } from "@/components/modals/PayLoanModal";
 import { ExportModal } from "@/components/modals/ExportModal";
 import { WhatsAppIntegrationModal } from "@/components/modals/WhatsAppIntegrationModal";
 import { SettingsModal } from "@/components/modals/SettingsModal";
@@ -63,6 +64,7 @@ export function GlobalModals() {
       <BillFormModal />
       <PaylaterModal />
       <LoanFormModal />
+      <PayLoanModal />
       <ExportModal />
       <WhatsAppIntegrationModal />
       <SettingsModal />
