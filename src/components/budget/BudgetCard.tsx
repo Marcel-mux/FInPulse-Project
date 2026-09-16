@@ -82,13 +82,13 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
 
   return (
     <motion.div
-      whileHover={{ scale: 1.015, y: -2 }}
-      transition={{ duration: 0.2 }}
+      whileHover={{ scale: 1.01, y: -1 }}
+      transition={{ duration: 0.15 }}
       className={`relative p-5 rounded-2xl glass-card border transition-all flex flex-col justify-between gap-4 ${
         isCritical
-          ? "border-crimson-500/30 shadow-glow-crimson"
+          ? "border-rose-500/30 shadow-card"
           : isWarning
-          ? "border-amber-500/30 shadow-[0_0_20px_-5px_rgba(245,158,11,0.25)]"
+          ? "border-amber-500/30 shadow-card"
           : "border-white/[0.08] hover:border-white/15"
       }`}
     >
@@ -173,7 +173,7 @@ export function BudgetCard({ budget, onEdit, onDelete }: BudgetCardProps) {
         {/* Burn Rate Badge */}
         {isOverbudget ? (
           <div className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-crimson-500/15 border border-crimson-500/30 text-crimson-400 text-[11px] font-bold">
-            <Flame className="w-3 h-3 text-crimson-400 animate-bounce" />
+            <Flame className="w-3 h-3 text-crimson-400 shrink-0" />
             <span>Bujet Habis! (+{formatCurrency(budget.totalSpent - budget.amountLimit)})</span>
           </div>
         ) : budget.estimatedDaysRemaining !== null ? (

@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import {
   AlertCircle,
   Briefcase,
@@ -29,8 +28,6 @@ import { BillWithRelations } from "@/types";
 import { formatCurrency } from "@/lib/formatters";
 import { usePayBill } from "@/hooks/useFinance";
 import { useAppStore } from "@/store/useAppStore";
-import confetti from "canvas-confetti";
-
 const CATEGORY_ICON_MAP: Record<string, typeof CircleDollarSign> = {
   Briefcase,
   Gift,
@@ -59,7 +56,7 @@ export function BillCard({ bill }: BillCardProps) {
   const payBillMutation = usePayBill();
 
   const IconComp = (bill.category?.icon && CATEGORY_ICON_MAP[bill.category.icon]) || Receipt;
-  const catColor = bill.category?.colorHex || "#06B6D4";
+  const catColor = bill.category?.colorHex || "#10B981";
 
   const handlePayNow = async () => {
     if (
@@ -72,11 +69,6 @@ export function BillCard({ bill }: BillCardProps) {
       try {
         await payBillMutation.mutateAsync(bill.id);
         router.refresh();
-        confetti({
-          particleCount: 40,
-          spread: 60,
-          origin: { y: 0.7 },
-        });
       } catch (err: unknown) {
         alert(err instanceof Error ? err.message : "Gagal membayar tagihan");
       }
@@ -84,16 +76,15 @@ export function BillCard({ bill }: BillCardProps) {
   };
 
   return (
-    <motion.div
-      whileHover={{ y: -2 }}
-      className={`relative p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-3 select-none ${
+    <div
+      className={`p-4 rounded-2xl border transition-all duration-200 flex flex-col justify-between gap-3 select-none bg-charcoal-900/80 hover:bg-charcoal-900 ${
         bill.isPaidThisMonth
-          ? "bg-charcoal-900/60 border-white/[0.06] hover:border-emerald-500/30"
+          ? "border-white/[0.06] opacity-80"
           : bill.status === "due_today"
-          ? "bg-gradient-to-br from-amber-950/20 via-charcoal-900 to-charcoal-950 border-amber-500/40 shadow-[0_0_20px_-5px_rgba(245,158,11,0.2)]"
+          ? "border-amber-500/40"
           : bill.status === "overdue"
-          ? "bg-gradient-to-br from-crimson-950/20 via-charcoal-900 to-charcoal-950 border-crimson-500/40 shadow-[0_0_20px_-5px_rgba(239,68,68,0.2)]"
-          : "bg-charcoal-900/80 border-white/[0.08] hover:border-white/20"
+          ? "border-rose-500/40"
+          : "border-white/[0.08] hover:border-white/20"
       }`}
     >
       {/* Header Item: Icon, Nama, Status */}
@@ -198,23 +189,23 @@ export function BillCard({ bill }: BillCardProps) {
             <button
               onClick={handlePayNow}
               disabled={payBillMutation.isPending}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-500 hover:bg-emerald-400 text-charcoal-950 transition-all shadow-glow-emerald disabled:opacity-50 cursor-pointer"
+              className="inline-flex items-center gap-1 px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-charcoal-950 transition-colors disabled:opacity-50 cursor-pointer"
               title="Bayar tagihan ini sekarang"
             >
-              <CheckCircle2 className="w-3 h-3" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
               <span>{payBillMutation.isPending ? "..." : "Bayar"}</span>
             </button>
           )}
 
           <button
             onClick={() => openBillForm(bill)}
-            className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-gray-400 hover:text-white border border-white/[0.06] transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-white/[0.04] hover:bg-white/[0.08] text-zinc-400 hover:text-white border border-white/[0.06] transition-colors cursor-pointer"
             title="Edit Tagihan"
           >
             <Edit2 className="w-3.5 h-3.5" />
           </button>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 }

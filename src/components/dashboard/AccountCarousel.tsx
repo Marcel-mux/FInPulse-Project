@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { Plus, WalletCards } from "lucide-react";
 import { Account } from "@/types";
 import { AccountCard } from "./AccountCard";
@@ -53,23 +52,23 @@ export function AccountCarousel({
         </div>
       </div>
 
-      {/* Horizontal Carousel on Mobile / Responsive Grid on Desktop */}
-      <div className="w-full flex md:grid md:grid-cols-2 xl:grid-cols-3 gap-3.5 sm:gap-4 overflow-x-auto md:overflow-visible no-scrollbar pb-4 pt-1 snap-x snap-mandatory touch-pan-x">
+      {/* Responsive Grid on Mobile & Desktop (No clipping, 1-col on mobile, 2-col on sm, 3-col on xl) */}
+      <div className="w-full grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 sm:gap-4 pt-1">
         {isLoading ? (
           // Skeleton loader
           Array.from({ length: 3 }).map((_, idx) => (
             <div
               key={idx}
-              className="w-64 sm:w-72 md:w-full h-40 sm:h-44 rounded-2xl bg-charcoal-900/60 border border-white/[0.06] animate-pulse shrink-0 md:shrink"
+              className="w-full h-36 sm:h-40 rounded-2xl bg-charcoal-900/60 border border-white/[0.06] animate-pulse"
             />
           ))
         ) : accounts.length === 0 ? (
-          <div className="w-full md:col-span-2 xl:col-span-3 p-8 rounded-2xl border border-dashed border-white/10 text-center text-gray-400 text-sm">
+          <div className="w-full sm:col-span-2 xl:col-span-3 p-8 rounded-2xl border border-dashed border-white/10 text-center text-zinc-400 text-sm">
             Belum ada akun dompet aktif.
           </div>
         ) : (
           accounts.map((account) => (
-            <div key={account.id} className="snap-start shrink-0 md:shrink w-auto md:w-full">
+            <div key={account.id} className="w-full">
               <AccountCard
                 account={account}
                 isSelected={selectedAccountId === account.id}
@@ -81,17 +80,15 @@ export function AccountCarousel({
         )}
 
         {/* Quick Add Account Card */}
-        <motion.div
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
+        <div
           onClick={onAddAccount}
-          className="w-36 sm:w-48 md:w-full h-40 sm:h-44 rounded-2xl border border-dashed border-white/15 hover:border-emerald-500/50 hover:bg-emerald-500/[0.03] transition-all flex flex-col items-center justify-center gap-3 cursor-pointer text-gray-400 hover:text-emerald-400 shrink-0 md:shrink select-none snap-start"
+          className="w-full h-36 sm:h-40 rounded-2xl border border-dashed border-white/15 hover:border-emerald-500/50 hover:bg-emerald-500/[0.03] transition-all flex flex-col items-center justify-center gap-2.5 cursor-pointer text-zinc-400 hover:text-emerald-400 select-none"
         >
-          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-white/[0.04] flex items-center justify-center group-hover:bg-emerald-500/10">
-            <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
+          <div className="w-8 h-8 rounded-xl bg-white/[0.04] flex items-center justify-center">
+            <Plus className="w-4 h-4" />
           </div>
-          <span className="text-[11px] sm:text-xs font-semibold">Tambah Baru</span>
-        </motion.div>
+          <span className="text-xs font-semibold">Tambah Akun Baru</span>
+        </div>
       </div>
     </section>
   );

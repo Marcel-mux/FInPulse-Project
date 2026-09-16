@@ -49,7 +49,7 @@ export function LiquidAccountsDonutChart({
 
   if (isLoading) {
     return (
-      <div className="w-full h-80 rounded-3xl glass-card border border-white/[0.08] p-6 flex flex-col justify-between animate-pulse">
+      <div className="w-full h-80 rounded-2xl glass-card border border-white/[0.08] p-6 flex flex-col justify-between animate-pulse">
         <div className="h-6 w-44 bg-white/10 rounded" />
         <div className="h-56 w-full bg-white/[0.04] rounded-2xl" />
       </div>
@@ -57,7 +57,7 @@ export function LiquidAccountsDonutChart({
   }
 
   return (
-    <div className="w-full rounded-3xl glass-card border border-white/[0.08] p-5 sm:p-6 flex flex-col gap-5 shadow-glass">
+    <div className="w-full rounded-2xl glass-card border border-white/[0.08] p-5 sm:p-6 flex flex-col gap-5 shadow-card">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2.5">

@@ -76,7 +76,7 @@ export function CashFlowBarChart({
 }: CashFlowBarChartProps) {
   if (isLoading) {
     return (
-      <div className="w-full h-80 rounded-3xl glass-card border border-white/[0.08] p-6 flex flex-col justify-between animate-pulse">
+      <div className="w-full h-80 rounded-2xl glass-card border border-white/[0.08] p-6 flex flex-col justify-between animate-pulse">
         <div className="h-6 w-48 bg-white/10 rounded" />
         <div className="h-56 w-full bg-white/[0.04] rounded-2xl" />
       </div>
@@ -86,7 +86,7 @@ export function CashFlowBarChart({
   const hasData = data.some((d) => d.income > 0 || d.expense > 0);
 
   return (
-    <div className="w-full rounded-3xl glass-card border border-white/[0.08] p-5 sm:p-6 flex flex-col gap-4 shadow-glass">
+    <div className="w-full rounded-2xl glass-card border border-white/[0.08] p-5 sm:p-6 flex flex-col gap-4 shadow-card">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
@@ -95,7 +95,6 @@ export function CashFlowBarChart({
             Arus Kas: Pemasukan vs Pengeluaran
           </h3>
         </div>
-        <span className="text-xs text-gray-400">Recharts Interaktif</span>
       </div>
 
       {/* Chart Container */}

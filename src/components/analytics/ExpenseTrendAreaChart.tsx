@@ -50,7 +50,7 @@ export function ExpenseTrendAreaChart({
 }: ExpenseTrendAreaChartProps) {
   if (isLoading) {
     return (
-      <div className="w-full h-80 rounded-3xl glass-card border border-white/[0.08] p-6 flex flex-col justify-between animate-pulse">
+      <div className="w-full h-80 rounded-2xl glass-card border border-white/[0.08] p-6 flex flex-col justify-between animate-pulse">
         <div className="h-6 w-44 bg-white/10 rounded" />
         <div className="h-56 w-full bg-white/[0.04] rounded-2xl" />
       </div>
@@ -60,16 +60,15 @@ export function ExpenseTrendAreaChart({
   const hasData = data.some((d) => d.amount > 0);
 
   return (
-    <div className="w-full rounded-3xl glass-card border border-white/[0.08] p-5 sm:p-6 flex flex-col gap-4 shadow-glass">
+    <div className="w-full rounded-2xl glass-card border border-white/[0.08] p-5 sm:p-6 flex flex-col gap-4 shadow-card">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <TrendingDown className="w-4 h-4 text-crimson-400" />
+          <TrendingDown className="w-4 h-4 text-rose-400" />
           <h3 className="text-sm sm:text-base font-bold text-white tracking-tight">
             Tren Pengeluaran Keuangan
           </h3>
         </div>
-        <span className="text-xs text-gray-400">Gradient Shadow</span>
       </div>
 
       {!hasData ? (
@@ -91,9 +90,8 @@ export function ExpenseTrendAreaChart({
                   x2="0"
                   y2="1"
                 >
-                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.45} />
-                  <stop offset="60%" stopColor="#8B5CF6" stopOpacity={0.1} />
-                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0.0} />
+                  <stop offset="5%" stopColor="#F43F5E" stopOpacity={0.25} />
+                  <stop offset="95%" stopColor="#F43F5E" stopOpacity={0.0} />
                 </linearGradient>
               </defs>
 
@@ -124,8 +122,8 @@ export function ExpenseTrendAreaChart({
               <Area
                 type="monotone"
                 dataKey="amount"
-                stroke="#EF4444"
-                strokeWidth={2.5}
+                stroke="#F43F5E"
+                strokeWidth={2}
                 fillOpacity={1}
                 fill="url(#expenseGradientShadow)"
               />

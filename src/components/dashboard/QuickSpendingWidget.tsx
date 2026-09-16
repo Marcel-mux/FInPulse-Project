@@ -18,7 +18,7 @@ export function QuickSpendingWidget() {
       {/* Section Header */}
       <div className="flex items-center justify-between px-1">
         <div className="flex items-center gap-2">
-          <PieChart className="w-4 h-4 text-violet-400" />
+          <PieChart className="w-4 h-4 text-emerald-400" />
           <h2 className="text-sm font-semibold tracking-wide text-white uppercase">
             Alokasi Belanja (30 Hari)
           </h2>
@@ -33,7 +33,7 @@ export function QuickSpendingWidget() {
       </div>
 
       {/* Card Content */}
-      <div className="w-full p-5 rounded-3xl glass-card border border-white/[0.08] shadow-glass flex flex-col gap-4">
+      <div className="w-full p-5 rounded-2xl glass-card border border-white/[0.08] shadow-card flex flex-col gap-4">
         {isLoading ? (
           <div className="flex flex-col gap-3">
             {Array.from({ length: 4 }).map((_, idx) => (

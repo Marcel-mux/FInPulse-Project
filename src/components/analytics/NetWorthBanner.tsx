@@ -3,7 +3,7 @@
 import { formatCurrency } from "@/lib/formatters";
 import { NetWorthSummary } from "@/types";
 import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
-import { ShieldCheck, Minus, Equal, Sparkles } from "lucide-react";
+import { ShieldCheck, Minus, Equal } from "lucide-react";
 
 interface NetWorthBannerProps {
   netWorth?: NetWorthSummary;
@@ -19,11 +19,7 @@ export function NetWorthBanner({
   const total = netWorth?.netWorth || 0;
 
   return (
-    <div className="w-full relative overflow-hidden rounded-3xl p-5 sm:p-7 glass-card border border-white/[0.08] shadow-glass">
-      {/* Ambient Glows */}
-      <div className="absolute -top-20 -left-16 w-56 h-56 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" />
-      <div className="absolute -bottom-20 -right-16 w-56 h-56 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none" />
-
+    <div className="w-full relative overflow-hidden rounded-2xl p-5 sm:p-7 glass-card border border-white/[0.08] shadow-card">
       <div className="relative z-10 flex flex-col gap-4">
         {/* Header with Badges */}
         <div className="flex flex-wrap items-center justify-between gap-2">
@@ -37,7 +33,7 @@ export function NetWorthBanner({
           </div>
 
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[11px] font-semibold">
-            <Sparkles className="w-3 h-3" />
+            <ShieldCheck className="w-3 h-3" />
             <span>100% Saldo Likuid Riil (Plafon Kredit Dipisahkan)</span>
           </div>
         </div>
@@ -86,7 +82,7 @@ export function NetWorthBanner({
             </div>
 
             <div className="flex flex-col">
-              <span className="text-[10px] text-indigo-400 font-semibold uppercase">
+              <span className="text-[10px] text-emerald-400 font-semibold uppercase">
                 Kekayaan Bersih
               </span>
               <span className="text-xs sm:text-sm font-bold font-mono text-emerald-300">

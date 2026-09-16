@@ -119,7 +119,7 @@ export function BudgetSection() {
           </p>
           <button
             onClick={() => openBudgetForm(null)}
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 text-charcoal-950 font-bold text-xs shadow-glow-emerald hover:brightness-110 transition-all cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-500 text-charcoal-950 font-bold text-xs hover:bg-emerald-400 transition-colors cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5" />
             <span>Pasang Bujet Pertama</span>

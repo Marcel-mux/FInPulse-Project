@@ -215,24 +215,17 @@ export function RecentActivityFeed({
                 }}
                 className="group flex items-center justify-between p-3.5 sm:p-4 rounded-2xl glass-surface border border-white/[0.06] hover:border-white/[0.12] transition-colors cursor-pointer"
               >
-                {/* Left: Animated Category Icon & Details */}
+                {/* Left: Category Icon & Details */}
                 <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-                  {/* Hyper-animated category icon on hover */}
-                  <motion.div
-                    whileHover={{
-                      scale: 1.2,
-                      rotate: [0, -10, 10, 0],
-                      transition: { duration: 0.35 },
-                    }}
-                    whileTap={{ scale: 0.9 }}
-                    className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 border border-white/[0.08] shadow-sm transition-transform"
+                  <div
+                    className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center flex-shrink-0 border border-white/[0.08]"
                     style={{
                       backgroundColor: `${iconColor}18`,
                       color: iconColor,
                     }}
                   >
                     <IconComponent className="w-5 h-5" />
-                  </motion.div>
+                  </div>
 
                   {/* Info Text */}
                   <div className="flex flex-col min-w-0">

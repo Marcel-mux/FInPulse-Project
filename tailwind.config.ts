@@ -47,11 +47,13 @@ const config: Config = {
         },
       },
       boxShadow: {
-        "glow-emerald": "0 0 25px -5px rgba(16, 185, 129, 0.3)",
-        "glow-indigo": "0 0 25px -5px rgba(99, 102, 241, 0.35)",
-        "glow-violet": "0 0 25px -5px rgba(139, 92, 246, 0.35)",
-        "glow-crimson": "0 0 25px -5px rgba(239, 68, 68, 0.4)",
-        "glass": "0 8px 32px 0 rgba(0, 0, 0, 0.37)",
+        "glow-emerald": "0 2px 10px -1px rgba(16, 185, 129, 0.15)",
+        "glow-indigo": "0 2px 10px -1px rgba(99, 102, 241, 0.15)",
+        "glow-violet": "0 2px 10px -1px rgba(139, 92, 246, 0.15)",
+        "glow-crimson": "0 2px 10px -1px rgba(239, 68, 68, 0.15)",
+        "glass": "0 4px 20px -2px rgba(0, 0, 0, 0.4)",
+        "card": "0 2px 8px -1px rgba(0, 0, 0, 0.3)",
+        "elevated": "0 8px 24px -4px rgba(0, 0, 0, 0.5)",
       },
       backdropBlur: {
         xs: "2px",

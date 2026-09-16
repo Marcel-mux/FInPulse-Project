@@ -72,6 +72,7 @@ export interface AccountsResponse {
   accounts: Account[];
   paylaterAccounts?: Account[];
   allAccounts?: Account[];
+  totalActualBalance?: number;
   totalNetWorth: number;
   activeAccountsCount: number;
   totalPaylaterLimit?: number;

@@ -22,22 +22,19 @@ export function BudgetProgressBar({
   const isCritical = safePercentage > 90;
 
   // Visual classes based on threshold
-  let fillGradient = "from-emerald-500 to-emerald-400";
-  let glowClass = "shadow-glow-emerald";
+  let fillColor = "bg-emerald-500";
   let textColor = "text-emerald-400";
   let StatusIcon = CheckCircle2;
   let statusText = "Aman";
 
   if (isWarning) {
-    fillGradient = "from-amber-500 to-amber-400";
-    glowClass = "shadow-[0_0_20px_-3px_rgba(245,158,11,0.45)]";
+    fillColor = "bg-amber-500";
     textColor = "text-amber-400";
     StatusIcon = AlertTriangle;
     statusText = "Waspada";
   } else if (isCritical) {
-    fillGradient = "from-crimson-600 to-crimson-500";
-    glowClass = "shadow-glow-crimson";
-    textColor = "text-crimson-400";
+    fillColor = "bg-rose-500";
+    textColor = "text-rose-400";
     StatusIcon = AlertOctagon;
     statusText = safePercentage >= 100 ? "Melebihi Bujet!" : "Kritis";
   }
@@ -60,22 +57,15 @@ export function BudgetProgressBar({
 
       {/* Progress Track */}
       <div
-        className={`w-full ${height} rounded-full bg-charcoal-900 border border-white/[0.08] overflow-hidden p-0.5 relative ${
-          isCritical
-            ? "ring-2 ring-crimson-500/40 ring-offset-1 ring-offset-charcoal-950 animate-pulse"
-            : ""
-        }`}
+        className={`w-full ${height} rounded-full bg-charcoal-900 border border-white/[0.08] overflow-hidden p-0.5 relative`}
       >
-        {/* Liquid-fill Animated Bar */}
+        {/* Solid Animated Bar */}
         <motion.div
           initial={{ width: 0 }}
           animate={{ width: `${clampedPercentage}%` }}
           transition={{ duration: 0.85, ease: "easeOut" }}
-          className={`h-full rounded-full bg-gradient-to-r ${fillGradient} ${glowClass} relative overflow-hidden`}
-        >
-          {/* Liquid Shimmer Light Shimmer */}
-          <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent animate-[shimmer_2s_infinite]" />
-        </motion.div>
+          className={`h-full rounded-full ${fillColor} relative overflow-hidden`}
+        />
       </div>
     </div>
   );

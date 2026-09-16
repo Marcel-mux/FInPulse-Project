@@ -27,8 +27,8 @@ export function AnalyticsSummaryCards({
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 w-full">
       {/* 1. Total Saldo Likuid */}
       <motion.div
-        whileHover={{ scale: 1.02 }}
-        className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-glass"
+        whileHover={{ scale: 1.01 }}
+        className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-card"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs text-zinc-400 font-medium">Saldo Likuid</span>
@@ -56,8 +56,8 @@ export function AnalyticsSummaryCards({
 
       {/* 2. Total Pemasukan Riil */}
       <motion.div
-        whileHover={{ scale: 1.02 }}
-        className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-glass"
+        whileHover={{ scale: 1.01 }}
+        className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-card"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs text-zinc-400 font-medium">Pemasukan Riil</span>
@@ -85,8 +85,8 @@ export function AnalyticsSummaryCards({
 
       {/* 3. Total Pengeluaran Riil */}
       <motion.div
-        whileHover={{ scale: 1.02 }}
-        className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-glass"
+        whileHover={{ scale: 1.01 }}
+        className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-card"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs text-zinc-400 font-medium">Pengeluaran Riil</span>
@@ -114,12 +114,12 @@ export function AnalyticsSummaryCards({
 
       {/* 4. Arus Kas Bersih (Net Cashflow) */}
       <motion.div
-        whileHover={{ scale: 1.02 }}
-        className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-glass"
+        whileHover={{ scale: 1.01 }}
+        className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-card"
       >
         <div className="flex items-center justify-between">
           <span className="text-xs text-zinc-400 font-medium">Arus Kas Bersih</span>
-          <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 flex items-center justify-center">
+          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
             <Landmark className="w-4 h-4" />
           </div>
         </div>
@@ -142,7 +142,7 @@ export function AnalyticsSummaryCards({
           <span className="text-[10px] text-zinc-400 mt-1 block flex items-center gap-1.5">
             <span>{isNetPositive ? "Surplus Likuid" : "Defisit Likuid"}</span>
             <span>•</span>
-            <span className="text-violet-400 font-medium">
+            <span className="text-emerald-400 font-medium">
               Savings Rate {summary.savingsRate || 0}%
             </span>
           </span>

@@ -30,6 +30,8 @@ export default function DashboardPage() {
 
   const accounts = accountsData?.accounts || [];
   const totalNetWorth = accountsData?.totalNetWorth || 0;
+  const totalActualBalance = accountsData?.totalActualBalance || 0;
+  const totalDebt = accountsData?.totalPaylaterUsed || 0;
   const activeAccountsCount = accountsData?.activeAccountsCount || 0;
   const transactions = transactionsData?.transactions || [];
 
@@ -46,6 +48,8 @@ export default function DashboardPage() {
             {/* Total Net Worth Overview */}
             <NetWorthCard
               totalNetWorth={totalNetWorth}
+              totalActualBalance={totalActualBalance}
+              totalDebt={totalDebt}
               activeAccountsCount={activeAccountsCount}
               isLoading={isAccountsLoading}
             />

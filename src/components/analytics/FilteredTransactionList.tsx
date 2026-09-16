@@ -107,12 +107,12 @@ export function FilteredTransactionList({
 
         {selectedCategoryId && (
           <div className="flex items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-violet-500/15 border border-violet-500/30 text-violet-300 text-xs font-semibold">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-semibold">
               <Filter className="w-3 h-3" />
               <span>Filter: {selectedCategoryName || "Kategori Terpilih"}</span>
               <button
                 onClick={onClearFilter}
-                className="ml-1 p-0.5 rounded-full hover:bg-white/20 text-white"
+                className="ml-1 p-0.5 rounded-full hover:bg-white/20 text-white cursor-pointer"
                 title="Hapus filter"
               >
                 <X className="w-3 h-3" />

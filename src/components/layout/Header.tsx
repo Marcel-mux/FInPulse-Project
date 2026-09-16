@@ -84,20 +84,13 @@ export function Header() {
           {/* Brand & Greeting */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           <Link href="/" className="flex items-center gap-2.5 sm:gap-3">
-            <motion.div
-              whileHover={{ scale: 1.08, rotate: 5 }}
-              whileTap={{ scale: 0.95 }}
-              className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-indigo-500 flex items-center justify-center shadow-glow-emerald cursor-pointer shrink-0"
-            >
-              <Activity className="w-5 h-5 text-white" />
-            </motion.div>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-500 flex items-center justify-center cursor-pointer shrink-0 transition-transform hover:scale-105">
+              <Activity className="w-5 h-5 text-charcoal-950" />
+            </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <h1 className="text-base sm:text-xl font-bold tracking-tight text-white flex items-center gap-1">
                   FinPulse
-                  <span className="text-[9px] sm:text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-semibold border border-emerald-500/20">
-                    PRO
-                  </span>
                 </h1>
               </div>
               <p className="text-[10px] sm:text-xs text-gray-400 font-medium truncate max-w-[110px] sm:max-w-none">
@@ -112,7 +105,7 @@ export function Header() {
               href="/"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 !isAnalytics
-                  ? "bg-emerald-500 text-charcoal-950 shadow-glow-emerald"
+                  ? "bg-emerald-500 text-charcoal-950"
                   : "text-gray-400 hover:text-white"
               }`}
             >
@@ -123,7 +116,7 @@ export function Header() {
               href="/analytics"
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
                 isAnalytics
-                  ? "bg-emerald-500 text-charcoal-950 shadow-glow-emerald"
+                  ? "bg-emerald-500 text-charcoal-950"
                   : "text-gray-400 hover:text-white"
               }`}
             >
@@ -307,15 +300,12 @@ export function Header() {
                     {/* Drawer Header */}
                     <div className="flex items-center justify-between pb-4 border-b border-white/[0.08]">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 via-emerald-500 to-indigo-500 flex items-center justify-center shadow-glow-emerald">
-                          <Activity className="w-5 h-5 text-white" />
+                        <div className="w-9 h-9 rounded-xl bg-emerald-500 flex items-center justify-center">
+                          <Activity className="w-5 h-5 text-charcoal-950" />
                         </div>
                         <div>
                           <h2 className="text-base font-bold text-white tracking-tight flex items-center gap-1.5">
                             FinPulse
-                            <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">
-                              PRO
-                            </span>
                           </h2>
                           <p className="text-[10px] text-gray-400 font-medium">
                             Navigasi Finansial
@@ -342,7 +332,7 @@ export function Header() {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all ${
                           !isAnalytics
-                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-glow-emerald"
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                             : "text-gray-300 hover:bg-white/[0.05] hover:text-white"
                         }`}
                       >
@@ -356,7 +346,7 @@ export function Header() {
                         onClick={() => setIsMobileMenuOpen(false)}
                         className={`flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs sm:text-sm font-semibold transition-all ${
                           isAnalytics
-                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shadow-glow-emerald"
+                            ? "bg-emerald-500/15 text-emerald-400 border border-emerald-500/30"
                             : "text-gray-300 hover:bg-white/[0.05] hover:text-white"
                         }`}
                       >

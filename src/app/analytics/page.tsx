@@ -89,18 +89,18 @@ export default function AnalyticsPage() {
         <NetWorthBanner netWorth={netWorth} isLoading={isLoading} />
 
         {/* 2. Navigation Tabs (Section A vs Section B) */}
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-charcoal-900 border border-white/10 w-full sm:w-fit">
+        <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-charcoal-900 border border-white/[0.08] w-full sm:w-fit">
           <button
             type="button"
             onClick={() => setActiveTab("real_wealth")}
             className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === "real_wealth"
-                ? "bg-gradient-to-r from-emerald-500 to-teal-500 text-charcoal-950 shadow-lg shadow-emerald-500/20"
-                : "text-zinc-400 hover:text-white hover:bg-white/5"
+                ? "bg-emerald-500 text-charcoal-950 shadow-sm"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
             }`}
           >
             <Wallet className="w-4 h-4" />
-            <span>💰 Kekayaan Riil & Arus Kas</span>
+            <span>Kekayaan Riil & Arus Kas</span>
             {realWealth && (
               <span
                 className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full ${
@@ -119,18 +119,18 @@ export default function AnalyticsPage() {
             onClick={() => setActiveTab("credit_facility")}
             className={`flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
               activeTab === "credit_facility"
-                ? "bg-gradient-to-r from-orange-500 to-amber-500 text-charcoal-950 shadow-lg shadow-orange-500/20"
-                : "text-zinc-400 hover:text-white hover:bg-white/5"
+                ? "bg-amber-500 text-charcoal-950 shadow-sm"
+                : "text-gray-400 hover:text-white hover:bg-white/5"
             }`}
           >
             <CreditCard className="w-4 h-4" />
-            <span>💳 Fasilitas Kredit & Paylater</span>
+            <span>Fasilitas Kredit & Paylater</span>
             {creditFacility && (
               <span
                 className={`hidden sm:inline-block text-[10px] px-2 py-0.5 rounded-full ${
                   activeTab === "credit_facility"
                     ? "bg-black/20 text-charcoal-950 font-mono"
-                    : "bg-white/10 text-orange-400 font-mono"
+                    : "bg-white/10 text-amber-400 font-mono"
                 }`}
               >
                 {creditFacility.creditUtilization}% Terpakai

@@ -7,7 +7,6 @@ import {
   Gauge,
   Percent,
   ShieldAlert,
-  Sparkles,
   TrendingDown,
 } from "lucide-react";
 import { CreditFacilitySummary } from "@/types";
@@ -84,14 +83,14 @@ export function CreditPlatformList({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 w-full">
         {/* 1. Total Plafon Tersedia */}
         <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-glass"
+          whileHover={{ scale: 1.01 }}
+          className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-card"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs text-zinc-400 font-medium">
               Total Plafon Kredit
             </span>
-            <div className="w-8 h-8 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 flex items-center justify-center">
+            <div className="w-8 h-8 rounded-xl bg-white/[0.06] border border-white/10 text-white flex items-center justify-center">
               <CreditCard className="w-4 h-4" />
             </div>
           </div>
@@ -111,8 +110,8 @@ export function CreditPlatformList({
 
         {/* 2. Total Limit Terpakai (Tagihan Aktif) */}
         <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-glass"
+          whileHover={{ scale: 1.01 }}
+          className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-card"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs text-zinc-400 font-medium">
@@ -138,8 +137,8 @@ export function CreditPlatformList({
 
         {/* 3. Persentase Beban Kredit (Utilization Rate) */}
         <motion.div
-          whileHover={{ scale: 1.02 }}
-          className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-glass"
+          whileHover={{ scale: 1.01 }}
+          className="p-4 sm:p-5 rounded-2xl glass-card border border-white/[0.08] flex flex-col justify-between gap-3 shadow-card"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs text-zinc-400 font-medium">
@@ -165,7 +164,7 @@ export function CreditPlatformList({
       </div>
 
       {/* Daftar Breakdown Per Platform Paylater */}
-      <div className="p-5 sm:p-6 rounded-3xl glass-card border border-white/[0.08] flex flex-col gap-4 shadow-glass">
+      <div className="p-5 sm:p-6 rounded-2xl glass-card border border-white/[0.08] flex flex-col gap-4 shadow-card">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-xl bg-orange-500/10 text-orange-400 border border-orange-500/20 flex items-center justify-center">
@@ -263,7 +262,7 @@ export function CreditPlatformList({
 
         {/* Tips Kesehatan Kredit */}
         <div className="mt-2 p-3.5 rounded-xl bg-charcoal-950/60 border border-white/5 flex items-start gap-2.5 text-xs text-zinc-400">
-          <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+          <ShieldAlert className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
           <p className="leading-relaxed">
             <strong className="text-white">Tips FinPulse:</strong> Pertahankan rasio penggunaan kredit di bawah 30% dari total plafon untuk menjaga beban cicilan bulanan tetap ringan dan kesehatan finansial tetap optimal.
           </p>
