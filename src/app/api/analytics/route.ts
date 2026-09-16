@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import {
+  AccountType,
   CashFlowDataPoint,
   CategoryBreakdownPoint,
+  CreditFacilitySummary,
+  CreditPlatformBreakdown,
   ExpenseTrendPoint,
+  LiquidAccountDistribution,
+  NetWorthSummary,
+  RealWealthSummary,
   TimeRange,
 } from "@/types";
 
@@ -63,8 +69,123 @@ export async function GET(request: NextRequest) {
 
     const { getAuthUserId } = await import("@/lib/userBootstrap");
     const userId = await getAuthUserId(request);
+    if (!userId) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-    // Ambil transaksi dalam rentang tanggal
+    // 1. Ambil seluruh akun user beserta pinjaman paylater aktif untuk pemisahan Saldo Aktual vs Kredit
+    const allAccounts = await prisma.account.findMany({
+      where: {
+        userId,
+        isActive: true,
+      },
+      include: {
+        paylaterLoans: {
+          where: {
+            status: "ACTIVE",
+          },
+          select: {
+            id: true,
+            dueDay: true,
+            remainingMonths: true,
+            monthlyTotal: true,
+            monthlyPrincipal: true,
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "asc",
+      },
+    });
+
+    const actualAccounts = allAccounts.filter(
+      (a) => a.accountCategory !== "PAYLATER" && a.type !== "credit"
+    );
+    const paylaterAccounts = allAccounts.filter(
+      (a) => a.accountCategory === "PAYLATER" || a.type === "credit"
+    );
+
+    // Hitung Saldo Likuid Riil (Actual Liquid Balance)
+    const totalActualBalance = actualAccounts.reduce((sum, a) => sum + a.balance, 0);
+
+    const PRESET_ACC_COLORS = [
+      "#10B981",
+      "#3B82F6",
+      "#06B6D4",
+      "#6366F1",
+      "#8B5CF6",
+      "#F59E0B",
+      "#EC4899",
+      "#14B8A6",
+    ];
+
+    const accountsDistribution: LiquidAccountDistribution[] = actualAccounts.map((a, idx) => ({
+      id: a.id,
+      name: a.name,
+      type: a.type as AccountType,
+      balance: a.balance,
+      colorHex: a.colorHex || PRESET_ACC_COLORS[idx % PRESET_ACC_COLORS.length],
+      icon: a.icon,
+      percentage:
+        totalActualBalance > 0
+          ? Math.round((a.balance / totalActualBalance) * 100 * 10) / 10
+          : 0,
+    }));
+
+    // Hitung Fasilitas Kredit / Paylater
+    let totalCreditLimit = 0;
+    let totalRemainingCredit = 0;
+
+    const platforms: CreditPlatformBreakdown[] = paylaterAccounts.map((p) => {
+      const limit = p.creditLimit || 0;
+      const remaining = p.balance;
+      const used = Math.max(0, limit - remaining);
+      const utilization =
+        limit > 0 ? Math.round((used / limit) * 100 * 10) / 10 : 0;
+      totalCreditLimit += limit;
+      totalRemainingCredit += remaining;
+
+      const activeLoan = p.paylaterLoans[0];
+      const dueDay = activeLoan?.dueDay || 1;
+
+      return {
+        id: p.id,
+        name: p.name,
+        creditLimit: limit,
+        remainingCredit: remaining,
+        usedCredit: used,
+        utilizationRate: utilization,
+        dueDay,
+        colorHex: p.colorHex || "#F97316",
+        icon: p.icon,
+        activeLoanCount: p.paylaterLoans.length,
+      };
+    });
+
+    const totalUsedCredit = Math.max(0, totalCreditLimit - totalRemainingCredit);
+    const creditUtilization =
+      totalCreditLimit > 0
+        ? Math.round((totalUsedCredit / totalCreditLimit) * 100 * 10) / 10
+        : 0;
+
+    const creditFacility: CreditFacilitySummary = {
+      totalCreditLimit,
+      totalRemainingCredit,
+      totalUsedCredit,
+      creditUtilization,
+      platforms,
+    };
+
+    // Hitung Kekayaan Bersih (Net Worth) Transparan
+    const netWorth = totalActualBalance - totalUsedCredit;
+    const netWorthSummary: NetWorthSummary = {
+      totalActualBalance,
+      totalUsedCredit,
+      netWorth,
+      formula: "Kekayaan Bersih = Total Saldo Aktual - Total Limit Terpakai (Utang Paylater & Pokok Pinjaman Aktif)",
+    };
+
+    // 2. Ambil transaksi dalam rentang tanggal
     const transactions = await prisma.transaction.findMany({
       where: {
         userId,
@@ -79,6 +200,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             type: true,
+            accountCategory: true,
             colorHex: true,
             icon: true,
           },
@@ -88,6 +210,7 @@ export async function GET(request: NextRequest) {
             id: true,
             name: true,
             type: true,
+            accountCategory: true,
             colorHex: true,
             icon: true,
           },
@@ -107,21 +230,37 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    // 1. Hitung Ringkasan KPI
-    let totalIncome = 0;
-    let totalExpense = 0;
+    // Filter transaksi rekening riil/likuid (agar arus kas & pengeluaran tidak tercampur mutasi kredit internal)
+    const realTransactions = transactions.filter(
+      (tx) => tx.account.accountCategory !== "PAYLATER" && tx.account.type !== "credit"
+    );
 
-    for (const tx of transactions) {
-      if (tx.type === "income") totalIncome += tx.amount;
-      if (tx.type === "expense") totalExpense += tx.amount;
+    // 3. Hitung Ringkasan KPI Arus Kas Riil
+    let totalRealIncome = 0;
+    let totalRealExpense = 0;
+
+    for (const tx of realTransactions) {
+      if (tx.type === "income") totalRealIncome += tx.amount;
+      if (tx.type === "expense") totalRealExpense += tx.amount;
     }
 
-    const netCashFlow = totalIncome - totalExpense;
+    const netCashFlow = totalRealIncome - totalRealExpense;
     const savingsRate =
-      totalIncome > 0 ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100 * 10) / 10 : 0;
+      totalRealIncome > 0
+        ? Math.round(((totalRealIncome - totalRealExpense) / totalRealIncome) * 100 * 10) / 10
+        : 0;
 
-    // 2. Agregasi Cash Flow In vs Out (Group by date)
-    // Buat map tanggal
+    const realWealth: RealWealthSummary = {
+      totalActualBalance,
+      totalRealIncome,
+      totalRealExpense,
+      netCashFlow,
+      savingsRate,
+      transactionCount: realTransactions.length,
+      accountsDistribution,
+    };
+
+    // 4. Agregasi Cash Flow In vs Out (Group by date) dari transaksi riil
     const cashFlowMap = new Map<string, { income: number; expense: number; label: string }>();
 
     // Buat timeline kontinu jika range 7d atau 30d
@@ -138,7 +277,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    for (const tx of transactions) {
+    for (const tx of realTransactions) {
       const txDate = new Date(tx.date);
       const key = toLocalDateKey(txDate);
       const label = txDate.toLocaleDateString("id-ID", {
@@ -158,7 +297,6 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Urutkan data poin secara kronologis
     const sortedKeys = Array.from(cashFlowMap.keys()).sort();
     const cashFlow: CashFlowDataPoint[] = sortedKeys.map((key) => {
       const val = cashFlowMap.get(key)!;
@@ -171,7 +309,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 3. Agregasi Category Breakdown (untuk Donut Chart)
+    // 5. Agregasi Category Breakdown (Donut Chart) dari transaksi riil
     const categoryMap = new Map<
       string,
       { name: string; color: string; value: number; icon: string | null; count: number }
@@ -191,7 +329,7 @@ export async function GET(request: NextRequest) {
 
     let colorIdx = 0;
 
-    for (const tx of transactions) {
+    for (const tx of realTransactions) {
       if (tx.type === "expense") {
         const catId = tx.categoryId || "uncategorized";
         const catName = tx.category?.name || "Tanpa Kategori";
@@ -223,13 +361,15 @@ export async function GET(request: NextRequest) {
         color: data.color,
         value: data.value,
         percentage:
-          totalExpense > 0 ? Math.round((data.value / totalExpense) * 100 * 10) / 10 : 0,
+          totalRealExpense > 0
+            ? Math.round((data.value / totalRealExpense) * 100 * 10) / 10
+            : 0,
         icon: data.icon,
         count: data.count,
       }))
       .sort((a, b) => b.value - a.value);
 
-    // 4. Agregasi Expense Trend (Area Chart)
+    // 6. Agregasi Expense Trend (Area Chart)
     const expenseTrend: ExpenseTrendPoint[] = cashFlow.map((cf) => ({
       date: cf.date,
       label: cf.label,
@@ -241,25 +381,29 @@ export async function GET(request: NextRequest) {
       startDate: startDate.toISOString(),
       endDate: endDate.toISOString(),
       summary: {
-        totalIncome,
-        totalExpense,
+        totalIncome: totalRealIncome,
+        totalExpense: totalRealExpense,
         netCashFlow,
         savingsRate,
-        transactionCount: transactions.length,
+        transactionCount: realTransactions.length,
       },
+      realWealth,
+      creditFacility,
+      netWorth: netWorthSummary,
       cashFlow,
       categoryBreakdown,
       expenseTrend,
-      transactions: transactions.map((t) => ({
+      transactions: realTransactions.map((t) => ({
         ...t,
         date: t.date.toISOString(),
         createdAt: t.createdAt.toISOString(),
       })),
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Error generating analytics:", error);
+    const msg = error instanceof Error ? error.message : "Gagal memproses data analitik keuangan";
     return NextResponse.json(
-      { error: "Gagal memproses data analitik keuangan" },
+      { error: msg },
       { status: 500 }
     );
   }

@@ -18,24 +18,23 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    const regularAccounts = accounts.filter((a) => a.accountCategory !== "PAYLATER");
-    const paylaterAccounts = accounts.filter((a) => a.accountCategory === "PAYLATER");
+    const regularAccounts = accounts.filter((a) => a.accountCategory !== "PAYLATER" && a.type !== "credit");
+    const paylaterAccounts = accounts.filter((a) => a.accountCategory === "PAYLATER" || a.type === "credit");
 
-    const totalNetWorth = regularAccounts.reduce((acc, account) => {
-      if (account.type === "credit") {
-        return acc - account.balance;
-      }
-      return acc + account.balance;
-    }, 0);
+    const totalActualBalance = regularAccounts.reduce((acc, account) => acc + account.balance, 0);
 
     const totalPaylaterLimit = paylaterAccounts.reduce((acc, a) => acc + (a.creditLimit || 0), 0);
     const totalPaylaterAvailable = paylaterAccounts.reduce((acc, a) => acc + a.balance, 0);
     const totalPaylaterUsed = Math.max(0, totalPaylaterLimit - totalPaylaterAvailable);
 
+    // Kekayaan Bersih = Total Saldo Aktual Likuid - Total Limit Terpakai (Utang Paylater)
+    const totalNetWorth = totalActualBalance - totalPaylaterUsed;
+
     return NextResponse.json({
       accounts: regularAccounts,
       paylaterAccounts,
       allAccounts: accounts,
+      totalActualBalance,
       totalNetWorth,
       activeAccountsCount: regularAccounts.length,
       totalPaylaterLimit,

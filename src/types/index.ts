@@ -140,11 +140,62 @@ export interface AnalyticsSummary {
   transactionCount: number;
 }
 
+export interface LiquidAccountDistribution {
+  id: string;
+  name: string;
+  type: AccountType;
+  balance: number;
+  colorHex: string | null;
+  icon: string | null;
+  percentage: number;
+}
+
+export interface CreditPlatformBreakdown {
+  id: string;
+  name: string;
+  creditLimit: number;
+  remainingCredit: number;
+  usedCredit: number;
+  utilizationRate: number;
+  dueDay: number;
+  colorHex: string | null;
+  icon: string | null;
+  activeLoanCount: number;
+}
+
+export interface CreditFacilitySummary {
+  totalCreditLimit: number;
+  totalRemainingCredit: number;
+  totalUsedCredit: number;
+  creditUtilization: number;
+  platforms: CreditPlatformBreakdown[];
+}
+
+export interface RealWealthSummary {
+  totalActualBalance: number;
+  totalRealIncome: number;
+  totalRealExpense: number;
+  netCashFlow: number;
+  savingsRate: number;
+  transactionCount: number;
+  accountsDistribution: LiquidAccountDistribution[];
+}
+
+export interface NetWorthSummary {
+  totalActualBalance: number;
+  totalUsedCredit: number;
+  netWorth: number;
+  formula: string;
+}
+
 export interface AnalyticsResponse {
   timeRange: TimeRange;
   startDate: string;
   endDate: string;
   summary: AnalyticsSummary;
+  realWealth: RealWealthSummary;
+  creditFacility: CreditFacilitySummary;
+  netWorth: NetWorthSummary;
   cashFlow: CashFlowDataPoint[];
   categoryBreakdown: CategoryBreakdownPoint[];
   expenseTrend: ExpenseTrendPoint[];
