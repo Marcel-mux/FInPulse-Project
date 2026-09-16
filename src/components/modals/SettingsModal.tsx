@@ -293,7 +293,7 @@ export function SettingsModal() {
                         </span>
                       </div>
                       <p className="text-[11px] text-gray-400 mt-0.5">
-                        Menghapus transaksi pada tanggal yang dipilih dan memulihkan saldo akun ke kondisi sebelum transaksi terjadi.
+                        Mereset total seluruh aktivitas (transaksi, pinjaman baru, tagihan baru/eksekusi) pada tanggal yang dipilih serta memulihkan saldo rekening dan limit paylater.
                       </p>
 
                       {scope === "DAILY" && (
@@ -409,7 +409,7 @@ export function SettingsModal() {
                   {scope === "ALL" &&
                     "Tindakan ini tidak dapat dibatalkan. Semua transaksi, saldo rekening, tagihan, dan pinjaman Anda akan dikosongkan."}
                   {scope === "DAILY" &&
-                    `Mutasi transaksi pada tanggal ${selectedDate} akan dihapus dan dampaknya pada saldo rekening/paylater akan dibatalkan/dipulihkan.`}
+                    `Seluruh aktivitas (transaksi, pinjaman baru, dan status eksekusi tagihan) pada tanggal ${selectedDate} akan direset total serta dampaknya pada saldo rekening/paylater akan dipulihkan.`}
                   {scope === "MONTHLY" &&
                     `Seluruh transaksi dan anggaran pada bulan ${selectedMonth} akan dihapus dan dampaknya pada saldo rekening/paylater akan dibatalkan/dipulihkan.`}
                 </p>

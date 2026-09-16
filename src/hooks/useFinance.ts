@@ -649,6 +649,12 @@ export function useResetAllData() {
     },
     onSuccess: () => {
       // Invalidate all cached data to refresh accounts, transactions, budgets, bills, loans, etc.
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
+      queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
+      queryClient.invalidateQueries({ queryKey: ["analytics"] });
       queryClient.invalidateQueries();
     },
   });
