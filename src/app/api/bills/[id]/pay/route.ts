@@ -57,7 +57,7 @@ export async function POST(
       );
     }
 
-    // Eksekusi atomik: kurangi saldo, buat transaksi pengeluaran, perbarui lastDeducted
+    // Eksekusi atomik: kurangi saldo, buat transaksi pengeluaran, perbarui lastDeducted, dan buat record cicilan jika paylater
     const result = await prisma.$transaction(async (tx) => {
       // 1. Kurangi saldo rekening / sisa limit paylater
       const updatedAccount = await tx.account.update({
@@ -96,7 +96,66 @@ export async function POST(
         },
       });
 
-      return { updatedAccount, newTransaction, updatedBill };
+      // 4. [BUG FIX - WAJIB]: Jika menggunakan Paylater (SPayLater dll), otomatis buat record Loan
+      let newLoan = null;
+      let sourceAcc = null;
+
+      if (isPaylater) {
+        // Cari rekening kas/bank reguler utama milik user untuk sumber pembayaran cicilan nanti
+        sourceAcc = await tx.account.findFirst({
+          where: {
+            userId,
+            accountCategory: "REGULAR",
+            type: { not: "credit" },
+            isActive: true,
+          },
+          orderBy: [{ balance: "desc" }, { createdAt: "asc" }],
+        });
+
+        if (!sourceAcc) {
+          sourceAcc = await tx.account.findFirst({
+            where: {
+              userId,
+              id: { not: bill.accountId },
+              isActive: true,
+            },
+            orderBy: { createdAt: "asc" },
+          });
+        }
+
+        const loanSourceAccountId = sourceAcc?.id || bill.accountId;
+        const loanName = `Tagihan: ${bill.name} (${bill.account.name})`;
+
+        newLoan = await tx.loan.create({
+          data: {
+            userId,
+            name: loanName,
+            totalAmount: bill.amount,
+            tenor: 1,
+            monthlyPrincipal: bill.amount,
+            monthlyInterest: 0,
+            monthlyTotal: bill.amount,
+            dueDay: 1, // Otomatis diset tanggal 1 (siklus jatuh tempo SPayLater)
+            remainingMonths: 1,
+            status: "ACTIVE",
+            paylaterAccountId: bill.accountId,
+            sourceAccountId: loanSourceAccountId,
+            disbursementAccountId: null,
+          },
+        });
+
+        console.log(
+          `[PAY BILL] Berhasil membuat catatan cicilan Paylater: "${newLoan.name}" (ID: ${newLoan.id}) jatuh tempo tanggal 1.`
+        );
+      }
+
+      return {
+        updatedAccount,
+        newTransaction,
+        updatedBill,
+        createdLoan: newLoan,
+        defaultSourceAccount: sourceAcc,
+      };
     });
 
     // Kirim notifikasi WhatsApp jika user memiliki nomor WhatsApp terdaftar
@@ -108,16 +167,32 @@ export async function POST(
         year: "numeric",
       });
 
+      const nextMonthDate = new Date(Date.now() + 7 * 3600 * 1000);
+      const nextDueFormatted = new Date(
+        Date.UTC(nextMonthDate.getUTCFullYear(), nextMonthDate.getUTCMonth() + 1, 1)
+      ).toLocaleDateString("id-ID", {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      });
+
       const message = isPaylater
         ? `✅ *Pembayaran Tagihan Paylater Berhasil!*\n\n` +
-          `Tagihan *${bill.name}* telah berhasil dibayarkan menggunakan ${bill.account.name}.\n\n` +
+          `Tagihan *${bill.name}* telah berhasil dibayarkan menggunakan *${bill.account.name}*.\n\n` +
+          `📋 *Rincian Pembayaran:*\n` +
+          `• *Tagihan*: ${bill.name}\n` +
           `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
           `• *Provider*: ${bill.account.name} (Paylater)\n` +
           `• *Kategori*: ${bill.category.name}\n` +
           `• *Tanggal*: ${todayFormatted}\n` +
           `• *Sisa Limit ${bill.account.name}*: ${formatCurrency(result.updatedAccount.balance)}${
-            bill.account.creditLimit ? ` (Plafon: ${formatCurrency(bill.account.creditLimit)})` : ""
+            bill.account.creditLimit ? ` (dari Plafon ${formatCurrency(bill.account.creditLimit)})` : ""
           }\n\n` +
+          `📌 *Jadwal Pembayaran Cicilan:*\n` +
+          `Tagihan ini otomatis dicatat ke daftar cicilan paylater dan *jatuh tempo pada tanggal 1 bulan berikutnya (${nextDueFormatted})*.\n` +
+          (result.defaultSourceAccount
+            ? `• *Rekening Pembayar*: ${result.defaultSourceAccount.name}\n\n`
+            : `\n`) +
           `_Dikelola otomatis oleh FinPulse Pro._`
         : `✅ *Pembayaran Tagihan Berhasil!*\n\n` +
           `Tagihan *${bill.name}* telah berhasil dibayarkan.\n\n` +
@@ -141,6 +216,7 @@ export async function POST(
       success: true,
       bill: result.updatedBill,
       transaction: result.newTransaction,
+      loan: result.createdLoan,
       remainingBalance: result.updatedAccount.balance,
     });
   } catch (error) {

@@ -532,6 +532,7 @@ export function usePayBill() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["bills"] });
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
       queryClient.invalidateQueries({ queryKey: ["accounts"] });
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
       queryClient.invalidateQueries({ queryKey: ["analytics"] });

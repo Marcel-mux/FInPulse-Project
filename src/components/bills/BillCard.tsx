@@ -47,11 +47,14 @@ const CATEGORY_ICON_MAP: Record<string, typeof CircleDollarSign> = {
   HelpCircle,
 };
 
+import { useRouter } from "next/navigation";
+
 interface BillCardProps {
   bill: BillWithRelations;
 }
 
 export function BillCard({ bill }: BillCardProps) {
+  const router = useRouter();
   const { openBillForm } = useAppStore();
   const payBillMutation = usePayBill();
 
@@ -68,6 +71,7 @@ export function BillCard({ bill }: BillCardProps) {
     ) {
       try {
         await payBillMutation.mutateAsync(bill.id);
+        router.refresh();
         confetti({
           particleCount: 40,
           spread: 60,
