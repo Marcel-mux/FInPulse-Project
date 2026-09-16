@@ -100,6 +100,10 @@ async function handleCron(request: NextRequest) {
           );
 
           const isPaylater = bill.account.accountCategory === "PAYLATER";
+          const isSpaylater =
+            isPaylater &&
+            (/spay\s*later|shopee/i.test(bill.account.name) ||
+              bill.account.name.toLowerCase() === "spaylater");
 
           // 1. Validasi kecukupan limit paylater atau saldo kas
           if (isPaylater) {
@@ -181,62 +185,151 @@ async function handleCron(request: NextRequest) {
             continue;
           }
 
-          // 2. Eksekusi pemotongan saldo / limit
-          const { updatedAccount } = await prisma.$transaction(async (tx) => {
-            // a. Kurangi saldo rekening / sisa limit paylater
-            const acc = await tx.account.update({
-              where: { id: bill.accountId },
-              data: {
-                balance: {
-                  decrement: bill.amount,
+          // 2. Eksekusi pemotongan saldo / limit & pembuatan catatan cicilan jika paylater
+          const { updatedAccount, defaultSourceAccount } =
+            await prisma.$transaction(async (tx) => {
+              // a. Kurangi saldo rekening / sisa limit paylater
+              const acc = await tx.account.update({
+                where: { id: bill.accountId },
+                data: {
+                  balance: {
+                    decrement: bill.amount,
+                  },
                 },
-              },
-            });
+              });
 
-            // b. Buat transaksi pengeluaran
-            await tx.transaction.create({
-              data: {
-                userId: bill.userId,
-                type: "expense",
-                amount: bill.amount,
-                accountId: bill.accountId,
-                categoryId: bill.categoryId,
-                description: `Autodebet Tagihan: ${bill.name}${isPaylater ? ` (${bill.account.name})` : ""}`,
-                date: new Date(),
-                tags: isPaylater
-                  ? "#whatsapp #paylater #bill #autodebet"
-                  : "#whatsapp #bill #autodebet",
-                isRecurring: true,
-              },
-            });
+              // b. Buat transaksi pengeluaran
+              await tx.transaction.create({
+                data: {
+                  userId: bill.userId,
+                  type: "expense",
+                  amount: bill.amount,
+                  accountId: bill.accountId,
+                  categoryId: bill.categoryId,
+                  description: `Autodebet Tagihan: ${bill.name}${isPaylater ? ` (${bill.account.name})` : ""}`,
+                  date: new Date(),
+                  tags: isPaylater
+                    ? "#whatsapp #paylater #bill #autodebet"
+                    : "#whatsapp #bill #autodebet",
+                  isRecurring: true,
+                },
+              });
 
-            // c. Update lastDeducted
-            await tx.bill.update({
-              where: { id: bill.id },
-              data: {
-                lastDeducted: new Date(),
-              },
-            });
+              // c. Update lastDeducted pada bill (menandai PAID bulan ini)
+              await tx.bill.update({
+                where: { id: bill.id },
+                data: {
+                  lastDeducted: new Date(),
+                },
+              });
 
-            return { updatedAccount: acc };
-          });
+              // d. Jika menggunakan Paylater (SPayLater dll), otomatis buat record Loan
+              let newLoan = null;
+              let sourceAcc = null;
+
+              if (isPaylater) {
+                // Cari rekening kas/bank reguler utama milik user untuk sumber pembayaran cicilan nanti
+                sourceAcc = await tx.account.findFirst({
+                  where: {
+                    userId: bill.userId,
+                    accountCategory: "REGULAR",
+                    type: { not: "credit" },
+                    isActive: true,
+                  },
+                  orderBy: [{ balance: "desc" }, { createdAt: "asc" }],
+                });
+
+                if (!sourceAcc) {
+                  sourceAcc = await tx.account.findFirst({
+                    where: {
+                      userId: bill.userId,
+                      id: { not: bill.accountId },
+                      isActive: true,
+                    },
+                    orderBy: { createdAt: "asc" },
+                  });
+                }
+
+                const loanSourceAccountId = sourceAcc?.id || bill.accountId;
+                const loanName = isSpaylater
+                  ? `Autodebet SPayLater - ${bill.name}`
+                  : `Autodebet ${bill.account.name} - ${bill.name}`;
+
+                newLoan = await tx.loan.create({
+                  data: {
+                    userId: bill.userId,
+                    name: loanName,
+                    totalAmount: bill.amount,
+                    tenor: 1,
+                    monthlyPrincipal: bill.amount,
+                    monthlyInterest: 0,
+                    monthlyTotal: bill.amount,
+                    dueDay: 1, // Otomatis diset tanggal 1 untuk siklus jatuh tempo SPayLater
+                    remainingMonths: 1,
+                    status: "ACTIVE",
+                    paylaterAccountId: bill.accountId,
+                    sourceAccountId: loanSourceAccountId,
+                    disbursementAccountId: null,
+                  },
+                });
+
+                console.log(
+                  `[CRON BILLS] Berhasil membuat catatan cicilan Paylater: "${newLoan.name}" (ID: ${newLoan.id}) jatuh tempo tanggal 1.`
+                );
+              }
+
+              return {
+                updatedAccount: acc,
+                createdLoan: newLoan,
+                defaultSourceAccount: sourceAcc,
+              };
+            });
 
           results.autoDeducted++;
 
           // d. Kirim WhatsApp notifikasi sukses autodebet
           if (bill.user?.whatsappNumber) {
-            const waMessage = isPaylater
-              ? `🔔 *Autodebet Paylater Berhasil: ${bill.name}*\n\n` +
-                `Tagihan bulanan Anda telah berhasil dipotong otomatis dari limit ${bill.account.name}.\n\n` +
+            let waMessage: string;
+
+            if (isPaylater) {
+              const providerName = bill.account.name;
+              const nextMonthDate = new Date(
+                Date.UTC(currentYear, currentMonth + 1, 1)
+              );
+              const nextDueFormatted = nextMonthDate.toLocaleDateString(
+                "id-ID",
+                {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                }
+              );
+
+              waMessage =
+                `🔔 *Autodebet ${providerName} Berhasil!*\n\n` +
+                `Tagihan bulanan *${bill.name}* telah berhasil dipotong otomatis menggunakan limit *${providerName}*.\n\n` +
+                `📋 *Rincian Autodebet:*\n` +
+                `• *Tagihan*: ${bill.name}\n` +
                 `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
-                `• *Provider*: ${bill.account.name} (Paylater)\n` +
+                `• *Metode*: ${providerName} (Paylater)\n` +
                 `• *Kategori*: ${bill.category.name}\n` +
-                `• *Tanggal*: ${todayFormatted}\n` +
-                `• *Sisa Limit ${bill.account.name}*: ${formatCurrency(updatedAccount.balance)}${
-                  bill.account.creditLimit ? ` (dari Plafon ${formatCurrency(bill.account.creditLimit)})` : ""
+                `• *Tanggal Potong*: ${todayFormatted}\n` +
+                `• *Sisa Limit ${providerName}*: ${formatCurrency(updatedAccount.balance)}${
+                  bill.account.creditLimit
+                    ? ` (dari Plafon ${formatCurrency(bill.account.creditLimit)})`
+                    : ""
                 }\n\n` +
-                `_Status: Lunas untuk periode ini._`
-              : `🔔 *Autodebet Berhasil: ${bill.name}*\n\n` +
+                `📌 *Jadwal Pembayaran Cicilan:*\n` +
+                `Tagihan ini otomatis dicatat ke daftar cicilan paylater dan *jatuh tempo pada tanggal 1 bulan berikutnya (${nextDueFormatted})*.\n` +
+                (defaultSourceAccount
+                  ? `• *Rekening Pembayar*: ${defaultSourceAccount.name}\n\n`
+                  : `\n`) +
+                `_Status Tagihan: Lunas (Periode Ini)_\n` +
+                `Pantau cicilan & sisa limit Anda di Dashboard FinPulse Pro:\n` +
+                `👉 https://f-in-pulse-project.vercel.app/`;
+            } else {
+              waMessage =
+                `🔔 *Autodebet Berhasil: ${bill.name}*\n\n` +
                 `Tagihan bulanan Anda telah dipotong secara otomatis oleh FinPulse.\n\n` +
                 `• *Nominal*: ${formatCurrency(bill.amount)}\n` +
                 `• *Rekening*: ${bill.account.name}\n` +
@@ -244,6 +337,7 @@ async function handleCron(request: NextRequest) {
                 `• *Tanggal*: ${todayFormatted}\n` +
                 `• *Sisa Saldo*: ${formatCurrency(updatedAccount.balance)}\n\n` +
                 `_Status: Lunas untuk periode ini._`;
+            }
 
             await sendWhatsAppMessage({
               target: bill.user.whatsappNumber,
@@ -300,6 +394,10 @@ async function handleCron(request: NextRequest) {
     }
 
     // 5. Ambil semua cicilan pinjaman yang jatuh tempo hari ini dan masih aktif
+    const startOfTodayWib = new Date(
+      Date.UTC(currentYear, currentMonth, todayDay, 0, 0, 0, 0) - 7 * 3600 * 1000
+    );
+
     const candidateLoans = await prisma.loan.findMany({
       where: {
         dueDay: todayDay,
@@ -332,6 +430,14 @@ async function handleCron(request: NextRequest) {
 
     for (const loan of candidateLoans) {
       try {
+        // Jika pinjaman baru saja dibuat hari ini (misal autodebet paylater), cicilan pertama jatuh tempo bulan depan
+        if (new Date(loan.createdAt).getTime() >= startOfTodayWib.getTime()) {
+          console.log(
+            `[CRON LOANS] Pinjaman "${loan.name}" (${loan.id}) baru dibuat hari ini. Cicilan pertama jatuh tempo bulan depan. Dilewati.`
+          );
+          continue;
+        }
+
         // Cek apakah cicilan bulan ini sudah dibayar
         if (loan.lastPaid) {
           const lastP = new Date(loan.lastPaid);
