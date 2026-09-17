@@ -22,8 +22,8 @@
   --foreground: var(--color-text-primary);
 }
 
-/* Light mode overrides */
-.light {
+/* Light mode overrides — next-themes removes .dark class, doesn't add .light */
+html:not(.dark) {
   --color-bg: #f8fafc;
   --color-surface: #ffffff;
   --color-surface-elevated: #f1f5f9;
