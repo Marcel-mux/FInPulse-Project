@@ -80,7 +80,7 @@ export function Header() {
 
   return (
     <>
-      <header className="w-full border-b border-white/[0.06] bg-charcoal-950/80 backdrop-blur-md sticky top-0 z-40">
+      <header className="w-full border-b border-slate-200 dark:border-white/[0.06] bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-3 flex items-center justify-between">
           {/* Brand & Greeting */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
