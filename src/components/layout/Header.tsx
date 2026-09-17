@@ -23,7 +23,6 @@ import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useSession, signOut } from "next-auth/react";
 import { useAppStore } from "@/store/useAppStore";
-import { ThemeToggle, ThemeToggleMobile } from "@/components/ui/ThemeToggle";
 
 export function Header() {
   const pathname = usePathname();
@@ -80,7 +79,7 @@ export function Header() {
 
   return (
     <>
-      <header className="w-full border-b border-slate-200 dark:border-white/[0.06] bg-white/80 dark:bg-slate-950/80 backdrop-blur-md sticky top-0 z-40 transition-colors">
+      <header className="w-full border-b border-white/[0.06] bg-charcoal-950/80 backdrop-blur-md sticky top-0 z-40">
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 pb-3 flex items-center justify-between">
           {/* Brand & Greeting */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
@@ -203,9 +202,6 @@ export function Header() {
           </motion.button>
 
           <div className="h-5 w-[1px] bg-white/10 hidden sm:block mx-1" />
-
-          {/* Theme Toggle (Desktop / Tablet) */}
-          <ThemeToggle />
 
           {/* Notifications (Desktop / Tablet) */}
           <motion.button
@@ -479,9 +475,6 @@ export function Header() {
                         <Settings className="w-4 h-4 text-indigo-400 shrink-0" />
                         <span>Pengaturan & Profil</span>
                       </button>
-
-                      {/* Theme Toggle */}
-                      <ThemeToggleMobile />
                     </nav>
                   </div>
 

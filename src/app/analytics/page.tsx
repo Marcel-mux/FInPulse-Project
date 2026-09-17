@@ -57,7 +57,7 @@ export default function AnalyticsPage() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col relative max-w-full overflow-x-hidden w-screen transition-colors">
+    <div className="min-h-screen bg-charcoal-950 text-foreground flex flex-col relative max-w-full overflow-x-hidden w-screen">
       <Header />
 
       <main className="flex-1 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 pb-28 sm:pb-32 flex flex-col gap-6 sm:gap-8">

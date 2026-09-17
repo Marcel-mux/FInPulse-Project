@@ -3,7 +3,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { QueryProvider } from "@/providers/QueryProvider";
 import PwaRegister from "@/components/PwaRegister";
-import { ThemeProvider } from "@/components/providers/ThemeProvider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -44,7 +43,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="id" className="max-w-full overflow-x-hidden w-screen" suppressHydrationWarning>
+    <html lang="id" className="dark max-w-full overflow-x-hidden w-screen">
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#0f172a" />
@@ -54,12 +53,10 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-50 transition-colors max-w-full overflow-x-hidden w-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground max-w-full overflow-x-hidden w-screen min-h-screen`}
       >
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <PwaRegister />
-          <QueryProvider>{children}</QueryProvider>
-        </ThemeProvider>
+        <PwaRegister />
+        <QueryProvider>{children}</QueryProvider>
       </body>
     </html>
   );

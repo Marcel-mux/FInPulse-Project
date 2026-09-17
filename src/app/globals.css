@@ -22,27 +22,6 @@
   --foreground: var(--color-text-primary);
 }
 
-/* Light mode overrides — next-themes removes .dark class, doesn't add .light */
-html:not(.dark) {
-  --color-bg: #f8fafc;
-  --color-surface: #ffffff;
-  --color-surface-elevated: #f1f5f9;
-  --color-border: rgba(0, 0, 0, 0.08);
-  --color-border-subtle: rgba(0, 0, 0, 0.05);
-  --color-text-primary: #0f172a;
-  --color-text-secondary: #475569;
-  --color-text-muted: #94a3b8;
-
-  --color-primary: #059669;
-  --color-positive: #059669;
-  --color-negative: #dc2626;
-  --color-warning: #d97706;
-  --color-info: #2563eb;
-
-  --background: var(--color-bg);
-  --foreground: var(--color-text-primary);
-}
-
 html,
 body {
   max-width: 100%;
@@ -50,6 +29,8 @@ body {
 }
 
 body {
+  color: var(--foreground);
+  background: var(--background);
   min-height: 100vh;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen,
     Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif;

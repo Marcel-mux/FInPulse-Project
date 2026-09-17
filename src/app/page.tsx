@@ -36,7 +36,7 @@ export default function DashboardPage() {
   const transactions = transactionsData?.transactions || [];
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-50 flex flex-col relative max-w-full overflow-x-hidden w-screen transition-colors">
+    <div className="min-h-screen bg-charcoal-950 text-foreground flex flex-col relative max-w-full overflow-x-hidden w-screen">
       {/* Top Header */}
       <Header />
 
